@@ -206,7 +206,7 @@ PostgreSQL (sqlx) — utilisateurs, lutins, ventes, mises, journal d'événement
 
 | Décision | Retenu | Alternative | Justification |
 |---|---|---|---|
-| Transport temps réel | WebSocket | SSE | bidirectionnel (mises + diffusion sur un seul canal), un seul contrat |
+| Transport temps réel | WebSocket nu (axum) | SSE ; Socket.IO (socketioxide) | bidirectionnel (mises + diffusion sur un seul canal), un seul contrat ; reconnexion/heartbeat **implémentés par nous** car critère évalué (phase 3) ; frames JSON lisibles telles quelles dans l'onglet Réseau (critère phase 2) ; pas de dépendance protocole tiers côté Rust ; le resync par `seq` reste applicatif de toute façon |
 | Framework back | axum | actix-web | écosystème tokio/tower : middlewares (CORS, rate-limit, timeout) prêts — utile phase 3 |
 | Persistance | PostgreSQL | SQLite | état partagé entre 2 instances dès la phase 4, sans rework ; sqlx typé compile-time |
 | Broker (phase 4) | Redis pub/sub | NATS, Kafka | périmètre minimal, déjà suffisant pour du fan-out best-effort + resync par `seq` |
