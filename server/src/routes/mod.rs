@@ -1,5 +1,9 @@
+pub mod admin;
+pub mod auctions;
 pub mod auth;
 pub mod health;
+pub mod leaderboard;
+pub mod lutins;
 pub mod me;
 
 use axum::Router;
@@ -14,6 +18,11 @@ pub fn routes() -> Router<AppState> {
         .merge(health::routes())
         .merge(auth::routes())
         .merge(me::routes())
+        .merge(lutins::routes())
+        .merge(auctions::routes())
+        .merge(leaderboard::routes())
+        .merge(admin::routes())
+        .merge(crate::ws::routes::routes())
         .fallback(not_found)
 }
 

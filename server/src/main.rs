@@ -1,8 +1,11 @@
+mod auctions;
 mod auth;
 mod config;
 mod error;
+mod lutins;
 mod routes;
 mod state;
+mod ws;
 
 use axum::http::{header, Method};
 use axum::Router;
@@ -27,9 +30,28 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let config = Config::from_env()?;
-    let state = AppState::connect(config.database_url(), config.jwt_secret().to_owned()).await?;
+    let (publish_tx, publish_rx) = ws::publish_channel();
+    let state = AppState::connect(
+        config.database_url(),
+        config.jwt_secret().to_owned(),
+        ws::Hub::new(publish_tx),
+        config.allowed_origins().to_vec(),
+    )
+    .await?;
     sqlx::migrate!("./migrations").run(state.pool()).await?;
     auth::seed::seed_admin(state.pool()).await?;
+
+    // Real-time core: the single publisher (journal `seq` → broadcast, in
+    // order) and the auction lifecycle scanner (~1 s pass).
+    tokio::spawn(ws::run_publisher(
+        publish_rx,
+        state.pool().clone(),
+        state.hub().clone(),
+    ));
+    tokio::spawn(auctions::scheduler::run(
+        state.pool().clone(),
+        state.hub().clone(),
+    ));
 
     let origins = config
         .allowed_origins()

@@ -27,6 +27,11 @@ pub enum AppError {
     InvalidCredentials,
     #[error("too many requests")]
     RateLimited,
+    /// Game closed by an admin: no new auction, no new bid (cahier §3.4).
+    /// Rendered as 403 "forbidden": the front maps REST error codes from the
+    /// WS code list of the contract, which has no `game_closed` code.
+    #[error("game is closed")]
+    GameClosed,
     #[error("internal error")]
     Internal,
 }
@@ -43,6 +48,7 @@ impl AppError {
             AppError::UsernameTaken => (StatusCode::CONFLICT, "username_taken"),
             AppError::InvalidCredentials => (StatusCode::UNAUTHORIZED, "invalid_credentials"),
             AppError::RateLimited => (StatusCode::TOO_MANY_REQUESTS, "rate_limited"),
+            AppError::GameClosed => (StatusCode::FORBIDDEN, "forbidden"),
             AppError::Internal => (StatusCode::INTERNAL_SERVER_ERROR, "internal"),
         }
     }
