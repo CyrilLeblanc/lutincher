@@ -1,6 +1,6 @@
 // Pure logic of the sales tab (A2–A4): form model with the cahier §3.3
 // defaults, typed field validation, and the CreateAuctionRequest builder.
-// The contract carries `scheduled_at` (ISO 8601), so "start in N minutes"
+// The contract carries `starts_at` (ISO 8601), so "start in N minutes"
 // is computed from an injected clock. No React, no fetch.
 
 import type { CreateAuctionRequest, LeaderboardRow } from '../../socket/contract'
@@ -78,8 +78,8 @@ export function hasSalesErrors(errors: SalesErrors): boolean {
 /**
  * Builds the request body of POST /api/admin/auctions from a validated form.
  * `now` is injected: immediate start = the injected clock, "in N minutes"
- * = clock + N minutes. Note (task E): the contract has no `starts_in_min`
- * field, so the delay is expanded client-side into `scheduled_at`.
+ * = clock + N minutes. The delay is expanded client-side into `starts_at`
+ * (the server has no `starts_in_min` field).
  */
 export function buildCreateAuctionRequest(form: SalesForm, now: Date): CreateAuctionRequest {
   const delayMin = form.startMode === 'now' ? 0 : parseNonNegativeInt(form.startInMin) ?? 0
@@ -88,7 +88,7 @@ export function buildCreateAuctionRequest(form: SalesForm, now: Date): CreateAuc
     start_price: parsePositiveInt(form.startPrice) ?? DEFAULT_START_PRICE,
     increment: parsePositiveInt(form.increment) ?? DEFAULT_INCREMENT,
     duration_s: parsePositiveInt(form.durationS) ?? DEFAULT_DURATION_S,
-    scheduled_at: new Date(now.getTime() + delayMin * 60_000).toISOString(),
+    starts_at: new Date(now.getTime() + delayMin * 60_000).toISOString(),
   }
 }
 

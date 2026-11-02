@@ -35,7 +35,7 @@ export interface AuctionRoomProps {
 export function AuctionRoom({ roomId }: AuctionRoomProps) {
   const { user } = useAuth()
   const { status, send, subscribe } = useSocket()
-  const me = user?.user ?? null
+  const me = user?.username ?? null
 
   const live = useLiveSnapshot<RoomState, AuctionView>({
     key: roomId,

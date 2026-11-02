@@ -62,7 +62,8 @@ export interface Reservation {
 
 /** `GET /api/me` — profile, balance, reservations. */
 export interface UserMe {
-  user: string
+  id: Id
+  username: string
   role: UserRole
   points_total: number
   points_available: number
@@ -174,14 +175,42 @@ export interface LutinPreview {
 /** `POST /api/admin/lutins` — created lutin (same as preview, without svg). */
 export type CreatedLutin = Omit<LutinPreview, 'svg'>
 
-/** Body of `POST /api/admin/auctions`. */
+/** Body of `POST /api/admin/auctions` (absent `starts_at` = as soon as possible). */
 export interface CreateAuctionRequest {
   lutin_id: Id
   start_price: number
   increment: number
   duration_s: number
   /** Opening time, ISO 8601 timestamp. */
-  scheduled_at: string
+  starts_at: string
+}
+
+// --- REST snapshot envelopes (the server wraps its lists) ---------------------
+
+/** `GET /api/auctions` — scheduled + open auctions. */
+export interface AuctionsSnapshot {
+  auctions: AuctionView[]
+}
+
+/** `GET /api/leaderboard`. */
+export interface LeaderboardSnapshot {
+  rows: LeaderboardRow[]
+}
+
+/** One lutin won at auction, with its collection value. */
+export interface CollectionLutin extends Lutin {
+  value: number
+}
+
+/** `GET /api/me/collection` — lutins won by the caller, oldest win first. */
+export interface CollectionSnapshot {
+  lutins: CollectionLutin[]
+}
+
+/** `GET /api/game` — page-load game state (live path = WS `game_closed`). */
+export interface GameState {
+  closed: boolean
+  podium: LeaderboardRow[] | null
 }
 
 /** Narrowing guard shared by the HTTP client and the socket parser. */

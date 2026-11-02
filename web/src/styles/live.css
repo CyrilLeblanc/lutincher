@@ -108,6 +108,13 @@
   font-weight: var(--font-weight-medium);
 }
 
+/* --- Collection (task J) ------------------------------------------------------ */
+
+.collection-total {
+  margin: 0 0 var(--space-4);
+  font-weight: var(--font-weight-medium);
+}
+
 /* --- Auction room ------------------------------------------------------------ */
 
 .auction-room__back {

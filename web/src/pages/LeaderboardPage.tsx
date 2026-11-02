@@ -5,7 +5,7 @@
 import '../styles/live.css'
 import { API_PATHS, get } from '../api/http'
 import { LoadState } from '../components/LoadState'
-import type { LeaderboardRow } from '../socket/contract'
+import type { LeaderboardRow, LeaderboardSnapshot } from '../socket/contract'
 import { LEADERBOARD_TEXT, PAGE_TEXT, messageForError } from '../ui/strings'
 import {
   EMPTY_LEADERBOARD,
@@ -18,7 +18,7 @@ export function LeaderboardPage() {
   const live = useLiveSnapshot<readonly LeaderboardRow[], readonly LeaderboardRow[]>({
     key: 'leaderboard',
     initial: EMPTY_LEADERBOARD,
-    fetchSnapshot: () => get<LeaderboardRow[]>(API_PATHS.leaderboard),
+    fetchSnapshot: () => get<LeaderboardSnapshot>(API_PATHS.leaderboard).then((s) => s.rows),
     fromSnapshot: (rows) => sortLeaderboard(rows),
     applyEvent: applyLeaderboardEvent,
     failureMessage: messageForError,

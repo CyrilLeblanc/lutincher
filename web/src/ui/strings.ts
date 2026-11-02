@@ -318,3 +318,17 @@ export const LEADERBOARD_TEXT = {
   lutins: 'Lutins',
   empty: 'Aucun joueur au classement pour l’instant.',
 } as const
+
+// --- Intégration (task J) -------------------------------------------------------
+
+/** Game-closed banner wording (cahier §3.4), shown app-wide by the Layout. */
+export const GAME_TEXT = {
+  closed: 'Partie close : plus aucune nouvelle vente, le podium final est figé.',
+} as const
+
+/** Collection (/collection) wording. */
+export const COLLECTION_TEXT = {
+  empty: 'Aucun lutin remporté pour l’instant.',
+  total: (value: number): string => `Valeur de collection : ${pointsText(value)}`,
+  loginRequired: 'Connecte-toi pour voir ta collection.',
+} as const

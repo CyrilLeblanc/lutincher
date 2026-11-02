@@ -8,9 +8,13 @@ use std::sync::LazyLock;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// Asset pack root, resolved at compile time so the working directory
-/// never matters (cargo run, cargo test, container).
-const ASSETS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/assets/lutins");
+/// Asset pack root: `LUTINS_ASSETS_DIR` when set (container image, where the
+/// pack is copied outside the build tree), else the compile-time crate path
+/// so the working directory never matters (cargo run, cargo test).
+fn assets_dir() -> String {
+    std::env::var("LUTINS_ASSETS_DIR")
+        .unwrap_or_else(|_| format!("{}/assets/lutins", env!("CARGO_MANIFEST_DIR")))
+}
 
 /// Collection value per rarity rank (commun, rare, epique, legendaire).
 /// Leaderboards sum these over the lutins each player won (auctions wave);
@@ -110,7 +114,8 @@ impl Catalog {
     /// disk, and every slot must keep a commun asset so all four tiers stay
     /// drawable (asset spec, "minimum garanti").
     fn load() -> Result<Self, String> {
-        let dir = Path::new(ASSETS_DIR);
+        let root = assets_dir();
+        let dir = Path::new(&root);
         let manifest_text = read_file(&dir.join("manifest.json"))?;
         let raw: Value = serde_json::from_str(&manifest_text)
             .map_err(|err| format!("invalid manifest.json: {err}"))?;

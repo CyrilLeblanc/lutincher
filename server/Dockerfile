@@ -11,8 +11,11 @@ COPY src ./src
 COPY migrations ./migrations
 RUN touch src/main.rs && cargo build --release
 
-# Runtime stage: binary only (migrations are embedded by sqlx::migrate!).
+# Runtime stage: binary + lutin asset pack (loaded from LUTINS_ASSETS_DIR;
+# migrations are embedded by sqlx::migrate!).
 FROM debian:trixie-slim
 COPY --from=builder /build/target/release/lutincher-server /usr/local/bin/lutincher-server
+COPY assets/lutins /usr/local/share/lutincher/assets
+ENV LUTINS_ASSETS_DIR=/usr/local/share/lutincher/assets
 EXPOSE 3000
 ENTRYPOINT ["/usr/local/bin/lutincher-server"]

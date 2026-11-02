@@ -5,7 +5,7 @@
 import '../styles/live.css'
 import { API_PATHS, get } from '../api/http'
 import { LoadState } from '../components/LoadState'
-import type { AuctionView } from '../socket/contract'
+import type { AuctionView, AuctionsSnapshot } from '../socket/contract'
 import { AUCTIONS_TEXT, PAGE_TEXT, messageForError } from '../ui/strings'
 import { AuctionCard } from './auction/AuctionCard'
 import {
@@ -24,7 +24,7 @@ export function AuctionsPage() {
   const live = useLiveSnapshot<AuctionsState, AuctionView[]>({
     key: 'auctions',
     initial: EMPTY_AUCTIONS,
-    fetchSnapshot: () => get<AuctionView[]>(API_PATHS.auctions),
+    fetchSnapshot: () => get<AuctionsSnapshot>(API_PATHS.auctions).then((s) => s.auctions),
     fromSnapshot: initAuctions,
     applyEvent: auctionsReducer,
     failureMessage: messageForError,

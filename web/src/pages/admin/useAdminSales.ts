@@ -7,7 +7,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { API_PATHS, get, post } from '../../api/http'
 import { useSocket } from '../../socket/SocketContext'
-import type { AuctionView, LeaderboardRow, Lutin } from '../../socket/contract'
+import type {
+  AuctionView,
+  AuctionsSnapshot,
+  LeaderboardRow,
+  Lutin,
+} from '../../socket/contract'
 import { messageForError } from '../../ui/strings'
 import {
   buildCreateAuctionRequest,
@@ -60,9 +65,9 @@ export function useAdminSales(options: UseAdminSalesOptions): UseAdminSalesResul
   const [closeError, setCloseError] = useState<string | null>(null)
 
   const reloadAuctions = useCallback((): void => {
-    get<AuctionView[]>(API_PATHS.auctions)
-      .then((list) => {
-        setAuctions(list)
+    get<AuctionsSnapshot>(API_PATHS.auctions)
+      .then((snapshot) => {
+        setAuctions(snapshot.auctions)
         setAuctionsError(null)
       })
       .catch((cause: unknown) => {

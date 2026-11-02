@@ -1,12 +1,14 @@
 // App shell: header with brand, nav (admin entry only for admins), socket
 // status pill, player balance and session controls. Reads the auth and
-// socket contexts — presentational otherwise, no data fetching here.
+// socket contexts — presentational otherwise, no data fetching here (the
+// game-closed banner is the one app-wide exception, cahier §3.4).
 
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { useGameClosed } from '../api/useGameState'
 import { useSocket } from '../socket/SocketContext'
 import { ROUTE_PATHS } from '../ui/routes'
-import { APP_NAME, LAYOUT_TEXT, NAV_LABELS, SOCKET_STATUS_LABELS } from '../ui/strings'
+import { APP_NAME, GAME_TEXT, LAYOUT_TEXT, NAV_LABELS, SOCKET_STATUS_LABELS } from '../ui/strings'
 
 interface NavItem {
   to: string
@@ -24,6 +26,7 @@ const ADMIN_NAV_ITEM: NavItem = { to: ROUTE_PATHS.admin, label: NAV_LABELS.admin
 export function Layout() {
   const { user, logout } = useAuth()
   const { status } = useSocket()
+  const gameClosed = useGameClosed()
 
   const navItems: ReadonlyArray<NavItem> =
     user?.role === 'admin' ? [...PLAYER_NAV_ITEMS, ADMIN_NAV_ITEM] : PLAYER_NAV_ITEMS
@@ -59,7 +62,7 @@ export function Layout() {
             )}
             {user !== null ? (
               <>
-                <span className="app-user">{user.user}</span>
+                <span className="app-user">{user.username}</span>
                 <button type="button" className="button button--ghost" onClick={logout}>
                   {LAYOUT_TEXT.logout}
                 </button>
@@ -73,6 +76,11 @@ export function Layout() {
         </div>
       </header>
       <main className="app-main">
+        {gameClosed && (
+          <p className="banner banner--warning" role="status">
+            {GAME_TEXT.closed}
+          </p>
+        )}
         <Outlet />
       </main>
     </>
