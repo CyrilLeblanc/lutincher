@@ -1,0 +1,319 @@
+/*
+ * Admin space (studio + sales) — task H. Consumes the shared tokens only;
+ * base.css keeps the generic primitives (buttons, form fields, badges).
+ */
+
+/* --- Tabs ---------------------------------------------------------------- */
+
+.admin-tabs {
+  display: flex;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-tab {
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.admin-tab:hover {
+  background: var(--color-surface-muted);
+}
+
+.admin-tab.is-active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+/* --- Cards --------------------------------------------------------------- */
+
+.admin-stack {
+  display: grid;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (min-width: 56rem) {
+  .admin-grid {
+    grid-template-columns: 2fr 3fr;
+  }
+}
+
+.admin-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.admin-card__head h2 {
+  margin: 0;
+}
+
+.admin-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.admin-success {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/* --- Studio preview ------------------------------------------------------- */
+
+.studio-preview__frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-md);
+}
+
+.studio-preview__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.studio-preview__meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.studio-preview__seed {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.manifest-list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-sm);
+}
+
+.manifest-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+}
+
+/* --- Slot steppers -------------------------------------------------------- */
+
+.slot-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.slot-stepper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.slot-stepper__label {
+  flex: 0 0 6.5rem;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.slot-stepper__control {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.slot-stepper__asset {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+}
+
+.studio-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* --- Sales form ----------------------------------------------------------- */
+
+.sales-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+@media (min-width: 40rem) {
+  .sales-form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sales-form__wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.sales-start {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.sales-start__option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.sales-start__delay {
+  width: 5rem;
+}
+
+fieldset.sales-form__wide {
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* --- Auctions table ------------------------------------------------------- */
+
+.auction-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.auction-table th,
+.auction-table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.auction-lutin {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.auction-price {
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.auction-status {
+  display: inline-flex;
+  padding: 0.125rem var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+.auction-status--scheduled {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.auction-status--open {
+  background: var(--color-online);
+  color: #ffffff;
+}
+
+.auction-status--ended {
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+}
+
+.auction-status--cancelled {
+  background: var(--color-surface-muted);
+  color: var(--color-danger);
+}
+
+/* --- Game closure ---------------------------------------------------------- */
+
+.button--danger {
+  background: var(--color-danger);
+}
+
+.close-confirm {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-danger);
+  border-radius: var(--radius-md);
+}
+
+.close-confirm__title {
+  margin: 0;
+  color: var(--color-danger);
+  font-weight: var(--font-weight-bold);
+}
+
+.game-closed-banner {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-soft);
+}
+
+.game-closed-banner__title {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.podium {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+}

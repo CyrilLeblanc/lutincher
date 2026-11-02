@@ -151,3 +151,100 @@ export const PAGE_TEXT = {
     intro: 'Cette page n’existe pas ou plus.',
   },
 } as const
+
+// --- Admin studio (task H) -----------------------------------------------------
+// Block appended by the web-studio task (additions only, at the end of the
+// file — the file is co-edited in parallel by other tasks). Imports are
+// hoisted, so they may sit here.
+
+import type { AuctionStatus } from '../socket/contract'
+import type { SalesErrors, SalesField, SalesFieldError } from '../pages/admin/salesLogic'
+
+/** Tabs and lutin studio wording (A1). */
+export const ADMIN_TEXT = {
+  tabsLabel: 'Sections de l’espace admin',
+  studioTab: 'Concepteur de lutins',
+  salesTab: 'Ventes',
+  previewTitle: 'Aperçu en direct',
+  previewAlt: (name: string): string => `Aperçu SVG du lutin ${name}`,
+  previewPending: 'Génération de l’aperçu…',
+  nameLabel: 'Nom du lutin',
+  manifestTitle: 'Calques retenus',
+  seedLabel: (seed: number): string => `Graine ${seed}`,
+  designerTitle: 'Composition par calque',
+  rarityLabel: 'Rareté du tirage',
+  rarityAuto: 'Auto (60 / 30 / 9 / 1)',
+  rarityForcedHint: 'Rareté forcée : les calques affichés sont limités au palier choisi.',
+  loadingParts: 'Chargement des calques…',
+  partsRetry: 'Recharger les calques',
+  stepBack: (slot: string): string => `Calque précédent — ${slot}`,
+  stepForward: (slot: string): string => `Calque suivant — ${slot}`,
+  unknownAsset: '—',
+  rerollAll: 'Reroll tout',
+  rerollName: 'Autre nom',
+  save: 'Enregistrer le lutin',
+  savePending: 'Enregistrement…',
+  savedLutin: (name: string): string => `« ${name} » a rejoint l’inventaire.`,
+} as const
+
+/** French label of an auction status (shared display). */
+export const AUCTION_STATUS_LABELS: Record<AuctionStatus, string> = {
+  scheduled: 'Programmée',
+  open: 'Ouverte',
+  ended: 'Terminée',
+  cancelled: 'Annulée',
+}
+
+/** Sales tab wording (A2–A4). */
+export const SALES_TEXT = {
+  scheduleTitle: 'Programmer une vente',
+  lutinLabel: 'Lutin à vendre',
+  lutinPlaceholder: '— Choisir un lutin —',
+  lutinOption: (name: string, rarity: string): string => `${name} — ${rarity}`,
+  startPriceLabel: 'Prix de départ',
+  incrementLabel: 'Palier minimal',
+  durationLabel: 'Durée (secondes)',
+  startModeLabel: 'Démarrage',
+  startNow: 'Immédiat',
+  startInMinutes: 'Dans (minutes) :',
+  submit: 'Programmer la vente',
+  submitPending: 'Programmation…',
+  scheduled: (name: string): string =>
+    name !== '' ? `Vente de « ${name} » programmée.` : 'Vente programmée.',
+  inventoryLoading: 'Chargement de l’inventaire…',
+  inventoryEmpty: 'Inventaire vide : créez d’abord un lutin dans le concepteur.',
+  inventoryRetry: 'Recharger l’inventaire',
+  loadingAuctions: 'Chargement des ventes…',
+  listTitle: 'Ventes à venir et en cours',
+  refresh: 'Actualiser',
+  emptyAuctions: 'Aucune vente programmée ou en cours.',
+  colStatus: 'Statut',
+  colLutin: 'Lutin',
+  colPrice: 'Prix courant',
+  closeTitle: 'Fin de partie',
+  closeGame: 'Clôturer la partie',
+  closeConfirmTitle: 'Clôturer définitivement la partie ?',
+  closeWarning:
+    'Plus aucune nouvelle vente ne pourra être programmée ; les ventes en cours se terminent normalement.',
+  closeConfirmGo: 'Oui, clôturer',
+  closeCancel: 'Annuler',
+  closePending: 'Clôture…',
+  gameClosed: 'Partie close',
+  gameClosedHint: 'La partie est close : plus aucune nouvelle vente ne peut être programmée.',
+  podiumTitle: 'Podium final',
+  podiumRow: (rank: number, user: string, value: number, lutins: number): string =>
+    `${rank}. ${user} — ${value} pts · ${lutins} lutin(s)`,
+} as const
+
+/** French wording of the sales form error codes. */
+export const SALES_ERROR_MESSAGES: Record<SalesFieldError, string> = {
+  required: 'Choisissez un lutin dans l’inventaire.',
+  positive_int: 'Entrez un entier strictement positif.',
+  non_negative_int: 'Entrez un entier positif ou nul.',
+}
+
+/** French message of a field error, or null when the field is valid. */
+export function salesFieldMessage(errors: SalesErrors, field: SalesField): string | null {
+  const code = errors[field]
+  return code !== undefined ? SALES_ERROR_MESSAGES[code] : null
+}
