@@ -1,3 +1,4 @@
+mod auth;
 mod config;
 mod error;
 mod routes;
@@ -26,8 +27,9 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let config = Config::from_env()?;
-    let state = AppState::connect(config.database_url()).await?;
+    let state = AppState::connect(config.database_url(), config.jwt_secret().to_owned()).await?;
     sqlx::migrate!("./migrations").run(state.pool()).await?;
+    auth::seed::seed_admin(state.pool()).await?;
 
     let origins = config
         .allowed_origins()

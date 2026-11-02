@@ -24,6 +24,8 @@ services:
       DATABASE_URL: postgres://lutincher:lutincher@db:5432/lutincher
       JWT_SECRET: dev-secret-change-me
       ALLOWED_ORIGINS: http://localhost:5173
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: lutincher
     ports:
       - "3000:3000"
 

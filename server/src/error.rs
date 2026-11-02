@@ -21,6 +21,10 @@ pub enum AppError {
     Validation(String),
     #[error("{0}")]
     Conflict(String),
+    #[error("username already taken")]
+    UsernameTaken,
+    #[error("invalid username or password")]
+    InvalidCredentials,
     #[error("too many requests")]
     RateLimited,
     #[error("internal error")]
@@ -36,9 +40,20 @@ impl AppError {
             AppError::NotFound => (StatusCode::NOT_FOUND, "not_found"),
             AppError::Validation(_) => (StatusCode::BAD_REQUEST, "validation"),
             AppError::Conflict(_) => (StatusCode::CONFLICT, "conflict"),
+            AppError::UsernameTaken => (StatusCode::CONFLICT, "username_taken"),
+            AppError::InvalidCredentials => (StatusCode::UNAUTHORIZED, "invalid_credentials"),
             AppError::RateLimited => (StatusCode::TOO_MANY_REQUESTS, "rate_limited"),
             AppError::Internal => (StatusCode::INTERNAL_SERVER_ERROR, "internal"),
         }
+    }
+
+    /// Maps a Postgres unique violation (23505) to `taken`; any other database
+    /// error flows through the generic sqlx mapping.
+    pub fn unique_violation_or(err: sqlx::Error, taken: AppError) -> Self {
+        if err.as_database_error().is_some_and(|db| db.is_unique_violation()) {
+            return taken;
+        }
+        err.into()
     }
 }
 
@@ -63,5 +78,13 @@ impl From<sqlx::Error> for AppError {
                 AppError::Internal
             }
         }
+    }
+}
+
+/// Password hashing failures are internal (logged, never leaked to clients).
+impl From<argon2::password_hash::Error> for AppError {
+    fn from(err: argon2::password_hash::Error) -> Self {
+        tracing::error!(error = %err, "password hashing failed");
+        AppError::Internal
     }
 }

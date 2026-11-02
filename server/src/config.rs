@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 #[derive(Debug, Clone)]
 pub struct Config {
     database_url: String,
-    /// Consumed by the auth wave; read here so the env contract is fixed now.
+    /// HS256 secret for auth tokens.
     jwt_secret: String,
     bind_addr: SocketAddr,
     allowed_origins: Vec<String>,
@@ -37,8 +37,7 @@ impl Config {
         &self.database_url
     }
 
-    /// Consumed by the auth wave.
-    #[expect(dead_code)]
+    /// HS256 secret used to sign and verify auth tokens.
     pub fn jwt_secret(&self) -> &str {
         &self.jwt_secret
     }
