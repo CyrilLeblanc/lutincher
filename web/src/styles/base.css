@@ -1,0 +1,233 @@
+/*
+ * Minimal base: reset, typography, and the few shared component classes
+ * (app shell, status pills, rarity badge, lutin card, page block).
+ * No framework — everything consumes the tokens.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--space-3);
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: var(--font-size-xl);
+}
+
+h2 {
+  font-size: var(--font-size-lg);
+}
+
+p {
+  margin: 0 0 var(--space-3);
+}
+
+a {
+  color: var(--color-accent);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+}
+
+/* --- App shell --------------------------------------------------------- */
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-header__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4);
+  max-width: var(--layout-max-width);
+  min-height: var(--header-height);
+  margin: 0 auto;
+  padding: var(--space-2) var(--space-4);
+}
+
+.app-brand {
+  color: var(--color-text);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+}
+
+.app-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.app-nav a {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.app-nav a:hover {
+  background: var(--color-surface-muted);
+}
+
+.app-nav a.is-active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.app-header__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-left: auto;
+}
+
+.app-main {
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding: var(--space-5) var(--space-4);
+}
+
+/* --- Header pills ------------------------------------------------------- */
+
+.balance {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.socket-status {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  font-size: var(--font-size-sm);
+}
+
+.socket-status--connecting {
+  color: var(--color-text-muted);
+}
+
+.socket-status--open {
+  color: var(--color-online);
+  border-color: var(--color-online);
+}
+
+.socket-status--reconnecting {
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* --- Rarity badge ------------------------------------------------------- */
+
+.rarity-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--rarity-commun);
+  color: #ffffff;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.rarity-badge--commun {
+  background: var(--rarity-commun);
+}
+
+.rarity-badge--rare {
+  background: var(--rarity-rare);
+}
+
+.rarity-badge--epique {
+  background: var(--rarity-epique);
+}
+
+.rarity-badge--legendaire {
+  /* Gold needs a dark text to stay readable. */
+  background: var(--rarity-legendaire);
+  color: #5b4a12;
+}
+
+/* --- Lutin card --------------------------------------------------------- */
+
+.lutin-card {
+  display: block;
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  color: inherit;
+  text-decoration: none;
+}
+
+.lutin-card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.lutin-card__frame {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  background: var(--color-surface-muted);
+}
+
+.lutin-card__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.lutin-card__body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.lutin-card__name {
+  font-weight: var(--font-weight-medium);
+}
+
+/* --- Page block --------------------------------------------------------- */
+
+.page {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.page-intro {
+  margin: 0;
+  color: var(--color-text-muted);
+}

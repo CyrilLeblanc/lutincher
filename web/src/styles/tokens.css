@@ -1,0 +1,57 @@
+/*
+ * Design tokens — rarity palette, neutral light palette, spacing, radii,
+ * typography. Only custom properties live here; base.css consumes them.
+ */
+:root {
+  /* Rarity colors (cahier §3.2). */
+  --rarity-commun: #8bc34a;
+  --rarity-rare: #42a5f5;
+  --rarity-epique: #ab47bc;
+  --rarity-legendaire: #f6c445;
+
+  /* Neutral light palette, slightly warm. */
+  --color-bg: #faf8f4;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1eee7;
+  --color-border: #e3ded3;
+  --color-text: #2b2822;
+  --color-text-muted: #6e675a;
+
+  /* Accents. */
+  --color-accent: #2f7d4f;
+  --color-accent-soft: #e3f0e8;
+  --color-danger: #c0453a;
+  --color-online: #2e9e5b;
+
+  /* Spacing scale (4 px base). */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2.5rem;
+
+  /* Radii. */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Typography — system font stack. */
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+    Arial, sans-serif;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.25rem;
+  --font-size-xl: 1.75rem;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+
+  /* Elevation. */
+  --shadow-sm: 0 1px 2px rgb(43 40 34 / 0.08);
+  --shadow-md: 0 4px 12px rgb(43 40 34 / 0.12);
+
+  /* Layout. */
+  --layout-max-width: 72rem;
+  --header-height: 3.5rem;
+}
