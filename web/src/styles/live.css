@@ -1,0 +1,351 @@
+/*
+ * Live pages (task I): auction list, auction room, leaderboard.
+ * Consumes the tokens of tokens.css; base.css keeps the shared primitives
+ * (buttons, form fields, lutin card, page block).
+ */
+
+/* --- Auction list (home) -------------------------------------------------- */
+
+.auctions-section {
+  margin-top: var(--space-4);
+}
+
+.auctions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-4);
+}
+
+.auction-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.auction-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.auction-card__price {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.auction-card__upcoming {
+  padding: var(--space-1) var(--space-3);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.auction-card__link {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+}
+
+.empty-note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* --- Countdown -------------------------------------------------------------- */
+
+.countdown {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-bold);
+}
+
+.countdown--urgent {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  animation: countdown-pulse 1s steps(2, end) infinite;
+}
+
+.countdown--closed {
+  border-style: dashed;
+  font-weight: var(--font-weight-medium);
+}
+
+@keyframes countdown-pulse {
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* --- Banners (reconnecting, outbid, notices) ------------------------------- */
+
+.banner {
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+}
+
+.banner--warning {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.banner--alert {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+/* --- Auction room ------------------------------------------------------------ */
+
+.auction-room__back {
+  margin: 0 0 var(--space-3);
+}
+
+.auction-room__grid {
+  display: grid;
+  grid-template-columns: minmax(14rem, 20rem) minmax(0, 1fr);
+  gap: var(--space-5);
+  margin-top: var(--space-3);
+}
+
+.auction-room__facts {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+
+.auction-room__fact {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.auction-room__fact dt {
+  color: var(--color-text-muted);
+}
+
+.auction-room__fact dd {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.auction-room__side {
+  display: grid;
+  gap: var(--space-4);
+  align-content: start;
+}
+
+.auction-room__chrono {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.auction-room__chrono .countdown {
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--font-size-lg);
+}
+
+.auction-room__chrono-label {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.auction-room__antisnip {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* --- Bid form ---------------------------------------------------------------- */
+
+.bid-form {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 22rem;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.bid-form__balance,
+.bid-form__reason {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.bid-form .button {
+  justify-self: start;
+}
+
+/* --- Bid history --------------------------------------------------------------- */
+
+.bid-history {
+  margin-top: var(--space-5);
+}
+
+.bid-history__empty {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.bid-history__list {
+  display: grid;
+  gap: var(--space-1);
+  max-width: 28rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bid-history__row {
+  display: grid;
+  grid-template-columns: 6rem minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.bid-history__row:first-child {
+  font-weight: var(--font-weight-bold);
+}
+
+.bid-history__amount {
+  font-variant-numeric: tabular-nums;
+}
+
+.bid-history__time {
+  color: var(--color-text-muted);
+}
+
+/* --- Presence -------------------------------------------------------------------- */
+
+.presence {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+.presence h2 {
+  font-size: var(--font-size-md);
+}
+
+.presence__count {
+  margin: 0;
+  font-weight: var(--font-weight-medium);
+}
+
+.presence__names {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* --- Outcome ---------------------------------------------------------------------- */
+
+.auction-outcome {
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.auction-outcome p {
+  margin: 0;
+}
+
+.auction-outcome__win {
+  color: var(--color-accent);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+/* --- Load state -------------------------------------------------------------------- */
+
+.load-state {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+}
+
+.load-state--failed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.load-state--failed .form-error {
+  margin: 0;
+}
+
+/* --- Leaderboard ------------------------------------------------------------------- */
+
+.leaderboard-table {
+  width: 100%;
+  max-width: 40rem;
+  margin-top: var(--space-4);
+  border-collapse: collapse;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: var(--space-2) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.leaderboard-table th {
+  background: var(--color-surface-muted);
+  font-size: var(--font-size-sm);
+}
+
+.leaderboard-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.leaderboard-table .is-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.leaderboard-table__rank {
+  color: var(--color-text-muted);
+}
+
+.leaderboard-table tr.is-first td {
+  background: var(--color-accent-soft);
+  font-weight: var(--font-weight-bold);
+}
+
+.leaderboard-table tr.is-first .leaderboard-table__rank {
+  color: var(--color-accent);
+}
+
+/* --- Narrow screens ------------------------------------------------------------------ */
+
+@media (max-width: 48rem) {
+  .auction-room__grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

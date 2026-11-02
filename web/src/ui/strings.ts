@@ -248,3 +248,73 @@ export function salesFieldMessage(errors: SalesErrors, field: SalesField): strin
   const code = errors[field]
   return code !== undefined ? SALES_ERROR_MESSAGES[code] : null
 }
+
+// --- Enchères (task I : liste, salle de vente, classement) ----------------------
+
+/** Shared loading / retry wording of the live pages. */
+export const LOAD_STATE_TEXT = {
+  loading: 'Chargement…',
+  retry: 'Réessayer',
+} as const
+
+/** Amount with its unit, shared by every price line of the auction pages. */
+export const pointsText = (amount: number): string => `${amount} pts`
+
+/** Home page (/) wording: open and upcoming auction lists. */
+export const AUCTIONS_TEXT = {
+  openSection: 'Ventes en cours',
+  scheduledSection: 'Ventes à venir',
+  emptyOpen: 'Aucune vente en cours pour le moment.',
+  emptyScheduled: 'Aucune vente programmée pour le moment.',
+  currentPrice: (amount: number): string => `Mise courante : ${pointsText(amount)}`,
+  startPrice: (amount: number): string => `Prix de départ : ${pointsText(amount)}`,
+  upcoming: 'À venir',
+  joinRoom: 'Accéder à la salle',
+} as const
+
+/** Auction room (/vente/:id) wording. */
+export const AUCTION_ROOM_TEXT = {
+  roomTitle: 'Salle de vente',
+  backToList: 'Toutes les ventes',
+  chronoLabel: 'Temps restant',
+  closing: 'Clôture en cours…',
+  antiSniping: 'Anti-sniping : une mise dans les 10 dernières secondes prolonge la vente de 10 s.',
+  factStartPrice: 'Prix de départ',
+  factIncrement: 'Palier minimal',
+  points: pointsText,
+  bidAmountLabel: 'Montant de la mise (points)',
+  suggestionHint: (increment: number): string =>
+    `Suggestion : mise courante + ${increment}, ou le prix de départ pour la première mise.`,
+  bidSubmit: 'Miser',
+  invalidAmount: 'Saisis un montant entier positif (en points).',
+  balance: (amount: number): string => `Solde disponible : ${pointsText(amount)}`,
+  socketClosed: 'Mise indisponible : la connexion temps réel n’est pas établie.',
+  loginToBid: 'Connecte-toi pour participer aux enchères.',
+  outbidNotice: (by: string, amount: number): string =>
+    `Tu as été surenchéri par ${by} (${pointsText(amount)}).`,
+  reconnecting:
+    'Connexion perdue — reconnexion en cours, les événements manqués seront rattrapés.',
+  scheduledNotice: 'Cette vente n’a pas encore commencé.',
+  alreadyEnded: 'Cette vente est terminée.',
+  endedTitle: 'Vente terminée',
+  endedWinner: (winner: string, amount: number): string =>
+    `Remportée par ${winner} pour ${pointsText(amount)}.`,
+  endedYou: (lutin: string, amount: number): string =>
+    `Tu remportes ${lutin} pour ${pointsText(amount)} !`,
+  endedNoBid: 'Vente sans mise : le lutin retourne en vitrine.',
+  notFound: 'Cette vente n’existe pas ou plus.',
+  bidHistoryTitle: 'Historique des mises',
+  noBids: 'Aucune mise pour l’instant.',
+  bidAmount: pointsText,
+  presenceTitle: 'Connectés',
+  presenceCount: (count: number): string => `${count} connecté${count > 1 ? 's' : ''}`,
+} as const
+
+/** Leaderboard (/classement) wording. */
+export const LEADERBOARD_TEXT = {
+  rank: 'Rang',
+  player: 'Joueur',
+  value: 'Valeur de collection',
+  lutins: 'Lutins',
+  empty: 'Aucun joueur au classement pour l’instant.',
+} as const
