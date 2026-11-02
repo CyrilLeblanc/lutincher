@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lutincher — aperçu des assets</title>
+<style>
+  :root { --ink:#22283a; --muted:#6b7280; --line:#e3e6ee; --card:#fff; --bg:#f4f5f9; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui, sans-serif; color:var(--ink); background:var(--bg); }
+  header, main { max-width:1080px; margin:0 auto; padding:16px; }
+  h1 { font-size:1.4rem; margin:0 0 4px; }
+  h2 { font-size:1.1rem; margin:32px 0 12px; }
+  .hint { color:var(--muted); margin:0; }
+  button { font:inherit; cursor:pointer; border:1px solid var(--line); background:var(--card);
+           border-radius:8px; padding:6px 12px; }
+  button:hover { border-color:#b9bfd4; }
+  button.primary { background:#4fa968; border-color:#4fa968; color:#fff; }
+  .stage { display:flex; flex-wrap:wrap; gap:24px; align-items:flex-start; }
+  .stage svg { width:260px; height:260px; background:#fff; border:1px solid var(--line);
+               border-radius:12px; cursor:pointer; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0; }
+  .chips button { display:flex; flex-direction:column; align-items:flex-start; gap:2px; }
+  .chips .slot { font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); }
+  .chips button.active { outline:2px solid #4fa968; }
+  .picker { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0 0; }
+  .picker button.active { outline:2px solid #7c5cbf; }
+  .badge { font-size:.72rem; padding:1px 8px; border-radius:99px; color:#fff; }
+  .r-commun { background:#8a8f98; } .r-rare { background:#3f7fd9; }
+  .r-epique { background:#8a4fd3; } .r-legendaire { background:#d99a2b; }
+  .slot-block { margin:20px 0; }
+  .slot-head { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
+  .slot-head h3 { margin:0; font-size:1rem; }
+  .slot-head span { color:var(--muted); font-size:.85rem; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
+  .cell { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:8px; margin:0; }
+  .cell svg { width:100%; aspect-ratio:1; display:block; border-radius:6px; background:#eef1f6; }
+  .cell figcaption { display:flex; justify-content:space-between; align-items:center; gap:6px;
+                     margin-top:6px; font-size:.85rem; }
+  .cell code { color:var(--muted); font-size:.72rem; display:block; }
+  label.toggle { display:inline-flex; gap:6px; align-items:center; color:var(--muted); }
+  #error { display:none; background:#fde8e8; border:1px solid #f2b8b8; color:#8a1f1f;
+           border-radius:8px; padding:10px 14px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lutincher — aperçu des assets lutins</h1>
+  <p class="hint">33 fragments SVG (6 slots) empilés dans un viewBox 0 0 200 200. Grille de contrôle
+     ci-dessous, tirage aléatoire re-générable en haut.</p>
+</header>
+<main>
+  <div id="error"></div>
+
+  <section>
+    <h2>Lutin aléatoire</h2>
+    <div class="stage">
+      <svg id="lutin" viewBox="0 0 200 200" role="img" aria-label="Lutin assemblé"></svg>
+      <div>
+        <p id="lutin-name" class="hint" style="font-size:1.05rem;color:var(--ink)"></p>
+        <p><button id="reroll" class="primary">Nouveau tirage</button>
+           <span class="hint"> (ou cliquer sur le lutin)</span></p>
+        <p class="hint">Cliquer un slot ci-dessous pour le mettre en surbrillance<br>
+           puis choisir un asset dans la liste.</p>
+        <div id="chips" class="chips"></div>
+        <div id="picker" class="picker"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Tous les assets</h2>
+    <label class="toggle"><input type="checkbox" id="ghost" checked>
+      Silhouette de référence derrière chaque asset</label>
+    <div id="slots"></div>
+  </section>
+</main>
+
+<script>
+'use strict';
+const RARITY_CLASS = { commun:'r-commun', rare:'r-rare', epique:'r-epique', legendaire:'r-legendaire' };
+const RARITY_LABEL = { commun:'commun', rare:'rare', epique:'épique', legendaire:'légendaire' };
+const NONE_IDS = ['none'];
+
+let manifest = null;
+const frags = {};    // `${slotId}/${assetId}` -> fragment text
+const reference = {}; // slotId -> default asset id (first non-none, fallback first)
+
+const fragment = (slotId, assetId) => frags[`${slotId}/${assetId}`] || '';
+
+function showError(msg) {
+  const el = document.getElementById('error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+async function loadAll() {
+  manifest = await (await fetch('manifest.json')).json();
+  const jobs = [];
+  for (const slot of manifest.slots) {
+    const ref = slot.assets.find(a => !NONE_IDS.includes(a.id)) || slot.assets[0];
+    reference[slot.id] = ref.id;
+    for (const asset of slot.assets) {
+      const file = `svg/${slot.id}-${asset.id}.svg`;
+      jobs.push(fetch(file).then(r => {
+        if (!r.ok) throw new Error(`${file} : HTTP ${r.status}`);
+        return r.text();
+      }).then(t => { frags[`${slot.id}/${asset.id}`] = t; }));
+    }
+  }
+  await Promise.all(jobs);
+}
+
+// ---- assembled lutin -------------------------------------------------------
+let picks = {};      // slotId -> assetId
+let highlighted = null;
+
+function randomName() {
+  const n = manifest.names;
+  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  let name = `${pick(n.prefixes)} ${pick(n.cores)}`;
+  if (Math.random() < 0.5) name += ` ${pick(n.suffixes)}`;
+  return name;
+}
+
+function renderLutin() {
+  const svg = document.getElementById('lutin');
+  svg.innerHTML = manifest.slots.map(slot => {
+    const dim = highlighted && slot.id !== highlighted ? ' opacity="0.25"' : '';
+    return `<g data-slot="${slot.id}"${dim}>${fragment(slot.id, picks[slot.id])}</g>`;
+  }).join('');
+  const labels = manifest.slots.map(s => {
+    const a = s.assets.find(x => x.id === picks[s.id]);
+    return `${s.label} : ${a ? a.label : '?'}`;
+  });
+  document.getElementById('lutin-name').textContent = randomName();
+  document.getElementById('lutin-name').title = labels.join('\n');
+}
+
+function reroll() {
+  for (const slot of manifest.slots) {
+    const a = slot.assets[Math.floor(Math.random() * slot.assets.length)];
+    picks[slot.id] = a.id;
+  }
+  renderLutin();
+  renderChips();
+  renderPicker();
+}
+
+// ---- slot chips + manual picker -------------------------------------------
+function renderChips() {
+  const host = document.getElementById('chips');
+  host.innerHTML = '';
+  for (const slot of manifest.slots) {
+    const asset = slot.assets.find(a => a.id === picks[slot.id]);
+    const btn = document.createElement('button');
+    btn.className = slot.id === highlighted ? 'active' : '';
+    btn.innerHTML = `<span class="slot">${slot.label}</span><span>${asset ? asset.label : '?'}</span>`;
+    btn.addEventListener('click', () => {
+      highlighted = highlighted === slot.id ? null : slot.id;
+      renderLutin(); renderChips(); renderPicker();
+    });
+    host.appendChild(btn);
+  }
+}
+
+function renderPicker() {
+  const host = document.getElementById('picker');
+  host.innerHTML = '';
+  if (!highlighted) return;
+  const slot = manifest.slots.find(s => s.id === highlighted);
+  for (const asset of slot.assets) {
+    const btn = document.createElement('button');
+    btn.className = asset.id === picks[slot.id] ? 'active' : '';
+    btn.innerHTML = `${asset.label} <span class="badge ${RARITY_CLASS[asset.rarity]}">${RARITY_LABEL[asset.rarity]}</span>`;
+    btn.addEventListener('click', () => {
+      picks[slot.id] = asset.id;
+      renderLutin(); renderChips(); renderPicker();
+    });
+    host.appendChild(btn);
+  }
+}
+
+// ---- asset grid -------------------------------------------------------------
+function cellSvg(slotId, assetId, ghostOn) {
+  return manifest.slots.map(s => {
+    if (s.id === slotId) return `<g>${fragment(s.id, assetId)}</g>`;
+    if (!ghostOn) return '';
+    const op = s.id === 'background' ? '1' : '0.18';
+    return `<g opacity="${op}">${fragment(s.id, reference[s.id])}</g>`;
+  }).join('');
+}
+
+function renderGrid() {
+  const host = document.getElementById('slots');
+  host.innerHTML = '';
+  const ghost = document.getElementById('ghost').checked;
+  for (const slot of manifest.slots) {
+    const block = document.createElement('div');
+    block.className = 'slot-block';
+    const counts = slot.assets.reduce((acc, a) => { acc[a.rarity] = (acc[a.rarity] || 0) + 1; return acc; }, {});
+    block.innerHTML = `<div class="slot-head"><h3>${slot.label}</h3>
+      <span>z=${slot.z} · ${slot.assets.length} assets · ${Object.entries(counts).map(([r, n]) => `${n} ${RARITY_LABEL[r]}`).join(', ')}</span></div>`;
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    for (const asset of slot.assets) {
+      const fig = document.createElement('figure');
+      fig.className = 'cell';
+      fig.innerHTML =
+        `<svg viewBox="0 0 200 200">${cellSvg(slot.id, asset.id, ghost)}</svg>
+         <figcaption><span>${asset.label}<code>${slot.id}-${asset.id}</code></span>
+         <span class="badge ${RARITY_CLASS[asset.rarity]}">${RARITY_LABEL[asset.rarity]}</span></figcaption>`;
+      grid.appendChild(fig);
+    }
+    block.appendChild(grid);
+    host.appendChild(block);
+  }
+}
+
+// ---- boot -------------------------------------------------------------------
+loadAll().then(() => {
+  reroll();
+  renderGrid();
+}).catch(err => showError(`Impossible de charger les assets (${err.message}).
+Cette page doit être servie en HTTP, par exemple : python3 -m http.server — voir README.md.`));
+
+document.getElementById('reroll').addEventListener('click', reroll);
+document.getElementById('lutin').addEventListener('click', reroll);
+document.getElementById('ghost').addEventListener('change', renderGrid);
+</script>
+</body>
+</html>

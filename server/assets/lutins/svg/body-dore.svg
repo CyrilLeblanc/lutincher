@@ -1,0 +1,10 @@
+<g>
+  <ellipse cx="100" cy="188" rx="46" ry="7" fill="#1F2430" opacity="0.12"/>
+  <path d="M84,108 C72,132 62,160 57,181 Q100,190 143,181 C138,160 128,132 116,108 Z" fill="#F6C445"/>
+  <path d="M58,174 Q100,183 142,174 L143,181 Q100,190 57,181 Z" fill="#D99A2B"/>
+  <rect x="68" y="138" width="64" height="9" rx="4.5" fill="#D99A2B"/>
+  <polygon points="82,142 84.2,146 82,150 79.8,146" fill="#FFF3CE"/>
+  <polygon points="118,154 120.2,158 118,162 115.8,158" fill="#FFF3CE"/>
+  <polygon points="100,167 102,170 100,173 98,170" fill="#FFF3CE"/>
+  <circle cx="100" cy="90" r="32" fill="#F6C445"/>
+</g>

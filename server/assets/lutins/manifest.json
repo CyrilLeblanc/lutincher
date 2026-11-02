@@ -1,0 +1,121 @@
+{
+  "slots": [
+    {
+      "id": "background",
+      "z": 0,
+      "label": "Fond",
+      "assets": [
+        { "id": "neige", "label": "Neige douce", "rarity": "commun" },
+        { "id": "nuit", "label": "Nuit claire", "rarity": "commun" },
+        { "id": "colline", "label": "Colline verte", "rarity": "commun" },
+        { "id": "foret", "label": "Forêt profonde", "rarity": "rare" },
+        { "id": "nuit-fete", "label": "Nuit de fête", "rarity": "epique" }
+      ]
+    },
+    {
+      "id": "body",
+      "z": 1,
+      "label": "Corps",
+      "assets": [
+        { "id": "classique", "label": "Robe verte", "rarity": "commun" },
+        { "id": "nordique", "label": "Robe nordique", "rarity": "commun" },
+        { "id": "fraise", "label": "Robe bonbon", "rarity": "commun" },
+        { "id": "royal", "label": "Robe royale", "rarity": "rare" },
+        { "id": "glace", "label": "Robe de givre", "rarity": "epique" },
+        { "id": "dore", "label": "Lutin doré", "rarity": "legendaire" }
+      ]
+    },
+    {
+      "id": "ears",
+      "z": 2,
+      "label": "Oreilles",
+      "assets": [
+        { "id": "pointues", "label": "Oreilles pointues", "rarity": "commun" },
+        { "id": "larges", "label": "Oreilles larges", "rarity": "commun" },
+        { "id": "repliees", "label": "Oreilles repliées", "rarity": "commun" },
+        { "id": "allongees", "label": "Grandes oreilles", "rarity": "rare" }
+      ]
+    },
+    {
+      "id": "eyes",
+      "z": 3,
+      "label": "Yeux",
+      "assets": [
+        { "id": "perles", "label": "Yeux perlés", "rarity": "commun" },
+        { "id": "ronds", "label": "Grands yeux ronds", "rarity": "commun" },
+        { "id": "joie", "label": "Yeux joyeux", "rarity": "commun" },
+        { "id": "endormis", "label": "Yeux endormis", "rarity": "commun" },
+        { "id": "etoiles", "label": "Yeux étoilés", "rarity": "rare" },
+        { "id": "flamboyants", "label": "Yeux flamboyants", "rarity": "epique" }
+      ]
+    },
+    {
+      "id": "hat",
+      "z": 4,
+      "label": "Chapeau",
+      "assets": [
+        { "id": "none", "label": "Sans chapeau", "rarity": "commun" },
+        { "id": "bonnet-rouge", "label": "Bonnet rouge", "rarity": "commun" },
+        { "id": "bonnet-vert", "label": "Bonnet vert", "rarity": "commun" },
+        { "id": "sorcier", "label": "Chapeau de sorcier", "rarity": "rare" },
+        { "id": "haut-de-forme", "label": "Haut-de-forme", "rarity": "rare" },
+        { "id": "couronne", "label": "Couronne dorée", "rarity": "epique" }
+      ]
+    },
+    {
+      "id": "accessory",
+      "z": 5,
+      "label": "Accessoire",
+      "assets": [
+        { "id": "none", "label": "Sans accessoire", "rarity": "commun" },
+        { "id": "carotte", "label": "Carotte", "rarity": "commun" },
+        { "id": "echarpe", "label": "Écharpe rouge", "rarity": "commun" },
+        { "id": "clochette", "label": "Clochette d'or", "rarity": "rare" },
+        { "id": "lanterne", "label": "Lanterne", "rarity": "rare" },
+        { "id": "baguette-magique", "label": "Baguette magique", "rarity": "epique" }
+      ]
+    }
+  ],
+  "names": {
+    "prefixes": [
+      "Bergamote",
+      "Pirouette",
+      "Praline",
+      "Tartine",
+      "Mirolette",
+      "Sucrin",
+      "Gringalet",
+      "Cacahuète",
+      "Ribambelle",
+      "Bricabrac",
+      "Frisouille",
+      "Croquenote"
+    ],
+    "cores": [
+      "des Neiges",
+      "Caramel",
+      "du Sapin",
+      "des Braises",
+      "Frangipane",
+      "du Givre",
+      "des Mousses",
+      "Guimauve",
+      "des Sous-Bois",
+      "Pain d'Épices",
+      "des Champignons",
+      "Bonbon Fou"
+    ],
+    "suffixes": [
+      "de la Lune",
+      "du Pôle Nord",
+      "III",
+      "Junior",
+      "en personne",
+      "de la Nuit des Temps",
+      "en édition limitée",
+      "et fier de l'être",
+      "de la Dernière Minute",
+      "hors catalogue"
+    ]
+  }
+}

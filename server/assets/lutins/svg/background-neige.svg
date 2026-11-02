@@ -1,0 +1,12 @@
+<g>
+  <rect width="200" height="200" fill="#DDEEF9"/>
+  <path d="M0,178 Q50,158 100,172 Q150,156 200,174 L200,200 L0,200 Z" fill="#FFFFFF"/>
+  <circle cx="22" cy="26" r="3" fill="#FFFFFF"/>
+  <circle cx="46" cy="54" r="2" fill="#FFFFFF"/>
+  <circle cx="14" cy="98" r="2.4" fill="#FFFFFF"/>
+  <circle cx="36" cy="142" r="2" fill="#FFFFFF"/>
+  <circle cx="176" cy="32" r="2.6" fill="#FFFFFF"/>
+  <circle cx="188" cy="80" r="2" fill="#FFFFFF"/>
+  <circle cx="166" cy="120" r="2.2" fill="#FFFFFF"/>
+  <circle cx="184" cy="158" r="2" fill="#FFFFFF"/>
+</g>

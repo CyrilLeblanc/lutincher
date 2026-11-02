@@ -1,0 +1,6 @@
+<g>
+  <path d="M158,146 Q165,137 172,146" fill="none" stroke="#D99A2B" stroke-width="3" stroke-linecap="round"/>
+  <path d="M150,156 A15,15 0 0 1 180,156 L182,161 L148,161 Z" fill="#F6C445"/>
+  <rect x="146" y="160" width="38" height="6" rx="3" fill="#D99A2B"/>
+  <circle cx="165" cy="169" r="4.5" fill="#D99A2B"/>
+</g>

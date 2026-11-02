@@ -1,0 +1,8 @@
+<g>
+  <ellipse cx="100" cy="188" rx="46" ry="7" fill="#1F2430" opacity="0.12"/>
+  <path d="M84,108 C72,132 62,160 57,181 Q100,190 143,181 C138,160 128,132 116,108 Z" fill="#A6DBE8"/>
+  <path d="M58,170 Q100,180 142,170 L143,181 Q100,190 57,181 Z" fill="#FFFFFF"/>
+  <polygon points="100,126 104,130 100,134 96,130" fill="#FFFFFF"/>
+  <polygon points="100,150 104,154 100,158 96,154" fill="#FFFFFF"/>
+  <circle cx="100" cy="90" r="32" fill="#FADECB"/>
+</g>

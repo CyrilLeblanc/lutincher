@@ -1,0 +1,8 @@
+<g>
+  <ellipse cx="100" cy="188" rx="46" ry="7" fill="#1F2430" opacity="0.12"/>
+  <path d="M84,108 C72,132 62,160 57,181 Q100,190 143,181 C138,160 128,132 116,108 Z" fill="#7C5CBF"/>
+  <path d="M58,174 Q100,183 142,174 L143,181 Q100,190 57,181 Z" fill="#5A3F99"/>
+  <rect x="68" y="138" width="64" height="10" rx="5" fill="#F6C445"/>
+  <circle cx="100" cy="126" r="3" fill="#F6C445"/>
+  <circle cx="100" cy="90" r="32" fill="#F8C39A"/>
+</g>

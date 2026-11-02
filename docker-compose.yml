@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: lutincher
+      POSTGRES_PASSWORD: lutincher
+      POSTGRES_DB: lutincher
+    ports:
+      - "127.0.0.1:5432:5432" # dev access from the host (cargo run, psql)
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lutincher -d lutincher"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./server
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://lutincher:lutincher@db:5432/lutincher
+      JWT_SECRET: dev-secret-change-me
+      ALLOWED_ORIGINS: http://localhost:5173
+    ports:
+      - "3000:3000"
+
+volumes:
+  db-data:
