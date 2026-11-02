@@ -39,7 +39,6 @@ impl FromRequestParts<AppState> for AuthUser {
 /// Admin guard wrapping [`AuthUser`]; valid token but non-admin role yields
 /// 403 `forbidden`. Destructure with `.0` to reach the inner [`AuthUser`].
 #[derive(Debug, Clone)]
-#[expect(dead_code)] // consumed by the admin routes (wave E); remove once used
 pub struct AdminUser(pub AuthUser);
 
 impl FromRequestParts<AppState> for AdminUser {
