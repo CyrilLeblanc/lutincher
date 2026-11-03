@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: lutincher
       POSTGRES_PASSWORD: lutincher
       POSTGRES_DB: lutincher
-    ports:
-      - "127.0.0.1:5432:5432" # dev access from the host (cargo run, psql)
     volumes:
       - db-data:/var/lib/postgresql/data
     healthcheck:
@@ -23,20 +21,18 @@ services:
     environment:
       DATABASE_URL: postgres://lutincher:lutincher@db:5432/lutincher
       JWT_SECRET: dev-secret-change-me
-      # Dev origin (vite :5173) + composed front (nginx :8080).
-      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:8080
+      # Dev origin (vite :5173) + composed front (nginx :3000).
+      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
       ADMIN_USERNAME: admin
       ADMIN_PASSWORD: lutincher
       LUTINS_ASSETS_DIR: /usr/local/share/lutincher/assets
-    ports:
-      - "3000:3000"
 
   front:
     build: ./web
     depends_on:
       - api
     ports:
-      - "8080:80"
+      - "3000:80"
 
 volumes:
   db-data:

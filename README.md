@@ -63,10 +63,10 @@ le rattrapage à la reconnexion (phase 3) et le fan-out multi-instances (phase 4
 docker compose up --build
 ```
 
-Puis ouvrir **http://localhost:8080** (front servi par nginx, qui proxifie
+Puis ouvrir **http://localhost:3000** (front servi par nginx, qui proxifie
 `/api` et `/ws` vers l'api). Les trois services `db`, `api` et `front`
 démarrent, les migrations s'appliquent et le compte admin est créé
-automatiquement. Healthcheck : `curl http://localhost:8080/api/healthz`.
+automatiquement. Healthcheck : `curl http://localhost:3000/api/healthz`.
 
 ## Développement local
 
@@ -85,7 +85,7 @@ Vérifications : `cd server && cargo clippy --all-targets -- -D warnings && carg
 
 ## Démo rapide (5 actions)
 
-1. **Créer un compte** sur http://localhost:8080/inscription → 1000 points.
+1. **Créer un compte** sur http://localhost:3000/inscription → 1000 points.
 2. Se connecter en **admin**, onglet *Concepteur de lutins* : choisir une
    rareté, ajuster les calques, **enregistrer le lutin**.
 3. Onglet *Ventes* : sélectionner le lutin, **programmer la vente** (démarrage
