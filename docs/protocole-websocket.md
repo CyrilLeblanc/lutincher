@@ -119,7 +119,7 @@ erDiagram
 |---|---|---|
 | `bid` | `auction_id`, `amount` | Placer une enchère |
 | `sync` | `last_seq` | Demander le rejeu des events manqués |
-| `ping` | - | Keep-alive |
+| `ping` | - | Heartbeat toutes les 10 s : renouvelle la présence du client (expiration à 25 s sans ping) |
 
 ## 4. Serveur → Client
 
