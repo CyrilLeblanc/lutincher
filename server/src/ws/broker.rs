@@ -1,13 +1,13 @@
-//! Cross-instance fan-out over Redis pub/sub (phase 4). Every journalled event
-//! is PUBLISHed once on [`CHANNEL`]; each api instance SUBSCRIBEs and hands the
-//! frame to its own connections. Redis is a pipe, not a store: the journal stays
-//! the source of truth, so a frame missed during an outage is recovered by `sync`.
+//! Cross-instance fan-out over Redis pub/sub (phase 4). Every journalled batch
+//! is PUBLISHed, frame by frame, in one Redis transaction on [`CHANNEL`]; each
+//! api instance SUBSCRIBEs and hands the frames to its own connections. Redis is
+//! a pipe, not a store: the journal stays the source of truth, so a frame
+//! missed during an outage is recovered by `sync`.
 
 use std::time::Duration;
 
 use futures_util::{Stream, StreamExt};
 use redis::aio::ConnectionManager;
-use redis::AsyncCommands;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use uuid::Uuid;
@@ -30,17 +30,20 @@ struct Envelope {
     at: i64,
 }
 
-/// Publishes one stamped event to every instance. Returns once Redis accepted
-/// it, which the journal transaction waits for before its COMMIT.
-pub async fn publish(
+/// Publishes a batch of stamped events in one round trip, as one Redis
+/// transaction: subscribers receive the frames in order, or none of them.
+pub async fn publish_batch(
     broker: &mut ConnectionManager,
-    user: Option<Uuid>,
-    event: &Value,
+    frames: &[(Option<Uuid>, Value)],
 ) -> redis::RedisResult<()> {
     let at = chrono::Utc::now().timestamp_millis();
-    let payload = json!({ "user": user, "event": event, "at": at }).to_string();
-    let _receivers: i64 = broker.publish(CHANNEL, payload).await?;
-    Ok(())
+    let mut pipe = redis::pipe();
+    pipe.atomic();
+    for (user, event) in frames {
+        let payload = json!({ "user": user, "event": event, "at": at }).to_string();
+        pipe.cmd("PUBLISH").arg(CHANNEL).arg(payload).ignore();
+    }
+    pipe.query_async::<()>(broker).await
 }
 
 /// Runs for the life of the process: subscribes, delivers, resubscribes.

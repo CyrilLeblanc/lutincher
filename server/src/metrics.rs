@@ -55,6 +55,16 @@ pub static BROADCAST_LATENCY: LazyLock<Histogram> = LazyLock::new(|| {
     .expect("metric name is valid")
 });
 
+/// Events per journal transaction: the batch sizes the publisher reached.
+pub static JOURNAL_BATCH: LazyLock<Histogram> = LazyLock::new(|| {
+    register_histogram!(
+        "lutincher_journal_batch_size",
+        "Events per journal transaction",
+        vec![1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0]
+    )
+    .expect("metric name is valid")
+});
+
 /// Creates every series at startup. Lazy statics register on first use, so
 /// without this a fresh instance would expose no series until its first event.
 pub fn register_all() {
@@ -65,4 +75,5 @@ pub fn register_all() {
     LazyLock::force(&BIDS_ACCEPTED);
     LazyLock::force(&ERRORS);
     LazyLock::force(&BROADCAST_LATENCY);
+    LazyLock::force(&JOURNAL_BATCH);
 }
