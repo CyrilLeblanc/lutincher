@@ -1,29 +1,37 @@
-//! WebSocket hub: connection registry (several tabs per user), ordered
-//! publish pipeline and per-user bid rate limiting.
+//! WebSocket hub: connection registry (several tabs per user) and the ordered
+//! publish pipeline. Every api instance runs one; they share state through
+//! Redis (fan-out in `broker`, presence in `presence`, bid limits in `limits`).
 //!
 //! Delivery guarantees (cahier §6 "reconnexion"):
-//! - live: AT MOST ONCE — fan-out uses `try_send`; a full or dead channel
-//!   simply drops the frame;
-//! - after resync: AT LEAST ONCE — every broadcast is first appended to the
-//!   `events` journal (which allocates `seq`), then `sync` replays it;
-//! - ORDER: total — the single publisher task serializes journal insert and
-//!   broadcast, so clients observe events in strict `seq` order;
+//! - ORDER: total — a batch of events is journalled and published in one
+//!   transaction under an advisory lock (see `journal`), so every instance
+//!   receives events in strict `seq` order, whichever instance produced them;
+//! - live: AT MOST ONCE — fan-out uses `try_send`; a full or dead channel drops
+//!   the frame. A lost broker subscription drops the instance's connections, so
+//!   their clients resync instead of silently missing frames (see `broker`);
+//! - after resync: AT LEAST ONCE — every event is journalled before it is
+//!   published, and `sync` replays the journal;
 //! - duplicates (a replay racing a late live frame) are filtered client-side
 //!   by `seq` (web/src/socket/auctionSocket.ts).
 
 pub mod bids;
+pub mod broker;
 pub mod handler;
 pub mod journal;
+pub mod limits;
+pub mod presence;
 pub mod routes;
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
-use std::time::{Duration, Instant};
 
+use redis::aio::ConnectionManager;
 use serde_json::{json, Value};
 use tokio::sync::mpsc;
 use uuid::Uuid;
+
+use crate::metrics;
 
 /// Recipient of a published event.
 #[derive(Debug, Clone)]
@@ -52,14 +60,9 @@ pub mod error_code {
     pub const RATE_LIMITED: &str = "rate_limited";
 }
 
-/// Bid rate limit: 5 bids per sliding 10 s window, per user (cahier §6).
-const BID_WINDOW: Duration = Duration::from_secs(10);
-const BID_MAX: usize = 5;
-
-/// One live connection: owner plus its outbound channel.
+/// One live connection of this instance: owner plus its outbound channel.
 struct Conn {
     user: Uuid,
-    username: String,
     tx: mpsc::Sender<String>,
 }
 
@@ -67,8 +70,10 @@ struct HubInner {
     conns: Mutex<HashMap<u64, Conn>>,
     next_conn: AtomicU64,
     publish_tx: mpsc::Sender<Publish>,
-    /// Sliding bid windows, keyed by user (shared across their tabs).
-    bid_windows: Mutex<HashMap<Uuid, VecDeque<Instant>>>,
+    /// Shared Redis connection (multiplexed, reconnects by itself).
+    redis: ConnectionManager,
+    /// This instance's name (`INSTANCE_NAME`), for logs and `/healthz`.
+    instance: String,
 }
 
 /// Shared hub handle; clone freely.
@@ -87,6 +92,11 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 /// publisher drains in journal order.
 const PUBLISH_CAPACITY: usize = 256;
 
+/// Most events journalled in one transaction. The publisher never waits to
+/// fill a batch: it takes what is already queued, so a light load keeps
+/// batches of one and adds no latency.
+const MAX_BATCH: usize = 64;
+
 /// Creates the publish channel feeding [`run_publisher`]; pass the sender to
 /// [`Hub::new`], the receiver to the publisher task.
 pub fn publish_channel() -> (mpsc::Sender<Publish>, mpsc::Receiver<Publish>) {
@@ -94,79 +104,82 @@ pub fn publish_channel() -> (mpsc::Sender<Publish>, mpsc::Receiver<Publish>) {
 }
 
 impl Hub {
-    pub fn new(publish_tx: mpsc::Sender<Publish>) -> Self {
+    pub fn new(publish_tx: mpsc::Sender<Publish>, redis: ConnectionManager, instance: String) -> Self {
         Self {
             inner: Arc::new(HubInner {
                 conns: Mutex::new(HashMap::new()),
                 next_conn: AtomicU64::new(1),
                 publish_tx,
-                bid_windows: Mutex::new(HashMap::new()),
+                redis,
+                instance,
             }),
         }
     }
 
+    /// Clone of the shared Redis connection (cheap: multiplexed handle).
+    pub fn redis(&self) -> ConnectionManager {
+        self.inner.redis.clone()
+    }
+
+    pub fn instance(&self) -> &str {
+        &self.inner.instance
+    }
+
     /// Registers a connection and returns its handle.
-    pub fn register(&self, user: Uuid, username: &str, tx: mpsc::Sender<String>) -> u64 {
+    pub fn register(&self, user: Uuid, tx: mpsc::Sender<String>) -> u64 {
         let id = self.inner.next_conn.fetch_add(1, Ordering::Relaxed);
-        lock(&self.inner.conns).insert(
-            id,
-            Conn {
-                user,
-                username: username.to_owned(),
-                tx,
-            },
-        );
+        let mut conns = lock(&self.inner.conns);
+        conns.insert(id, Conn { user, tx });
+        metrics::CONNECTIONS.set(conns.len() as i64);
         id
     }
 
     /// Drops a connection from the registry.
     pub fn unregister(&self, conn: u64) {
-        lock(&self.inner.conns).remove(&conn);
+        let mut conns = lock(&self.inner.conns);
+        conns.remove(&conn);
+        metrics::CONNECTIONS.set(conns.len() as i64);
     }
 
-    /// Distinct usernames behind at least one live connection, sorted
-    /// (contract: `presence.online`).
-    pub fn online_usernames(&self) -> Vec<String> {
-        let conns = lock(&self.inner.conns);
-        let mut names: Vec<String> = conns.values().map(|conn| conn.username.clone()).collect();
-        names.sort();
-        names.dedup();
-        names
+    /// Closes every local connection: dropping their senders ends each
+    /// connection loop, and the clients reconnect and resync.
+    pub fn drop_connections(&self) {
+        let mut conns = lock(&self.inner.conns);
+        conns.clear();
+        metrics::CONNECTIONS.set(0);
     }
 
     /// Non-blocking fan-out. Closed channels are pruned; full ones keep the
     /// connection but drop the frame (at-most-once live, see module docs).
     pub fn broadcast_all(&self, text: &str) {
         let mut conns = lock(&self.inner.conns);
-        conns.retain(|_, conn| {
-            !matches!(
-                conn.tx.try_send(text.to_owned()),
-                Err(mpsc::error::TrySendError::Closed(_))
-            )
+        conns.retain(|_, conn| match conn.tx.try_send(text.to_owned()) {
+            Ok(()) => {
+                metrics::FRAMES_SENT.inc();
+                true
+            }
+            Err(mpsc::error::TrySendError::Full(_)) => true,
+            Err(mpsc::error::TrySendError::Closed(_)) => false,
         });
+        metrics::CONNECTIONS.set(conns.len() as i64);
+    }
+
+    /// Non-blocking send to one connection (a `sync` reply). A full or gone
+    /// connection drops the frame, like any live frame.
+    pub fn send_to_conn(&self, conn: u64, text: &str) {
+        if let Some(conn) = lock(&self.inner.conns).get(&conn) {
+            let _ = conn.tx.try_send(text.to_owned());
+        }
     }
 
     /// Non-blocking send to every tab of one user.
     pub fn send_to_user(&self, user: Uuid, text: &str) {
         let conns = lock(&self.inner.conns);
         for conn in conns.values().filter(|conn| conn.user == user) {
-            let _ = conn.tx.try_send(text.to_owned());
+            if conn.tx.try_send(text.to_owned()).is_ok() {
+                metrics::FRAMES_SENT.inc();
+            }
         }
-    }
-
-    /// Sliding-window check; records the attempt when allowed.
-    pub fn bid_allowed(&self, user: Uuid) -> bool {
-        let mut windows = lock(&self.inner.bid_windows);
-        let now = Instant::now();
-        let window = windows.entry(user).or_default();
-        while window.front().is_some_and(|at| now.duration_since(*at) >= BID_WINDOW) {
-            window.pop_front();
-        }
-        if window.len() >= BID_MAX {
-            return false;
-        }
-        window.push_back(now);
-        true
     }
 
     /// Queues one event for journalling + broadcast, in order.
@@ -185,21 +198,12 @@ impl Hub {
 /// Queues a targeted `error` event. The journal gives it a `seq` (keeping the
 /// client cursor monotonic) but `sync` never replays error rows.
 pub async fn send_error(hub: &Hub, user: Uuid, code: &str, detail: &str) {
+    metrics::ERRORS.with_label_values(&[code]).inc();
     hub.publish(
         Audience::User(user),
         json!({ "type": "error", "code": code, "detail": detail }),
     )
     .await;
-}
-
-/// Broadcasts the current presence after any connect/disconnect.
-pub async fn publish_presence(hub: &Hub) {
-    let online: Vec<Value> = hub
-        .online_usernames()
-        .into_iter()
-        .map(|name| json!({ "user": name }))
-        .collect();
-    hub.publish_all(json!({ "type": "presence", "online": online })).await;
 }
 
 /// Decodes a tagged client-message body after stripping `type`, strictly:
@@ -210,27 +214,17 @@ pub fn parse_message<T: serde::de::DeserializeOwned>(value: &Value) -> Option<T>
     serde_json::from_value(object).ok()
 }
 
-/// Single-writer task: journal insert (allocating `seq`) strictly before the
-/// broadcast, so every client sees journal order on the wire.
+/// Single writer per instance: takes the queued events (up to [`MAX_BATCH`])
+/// and hands them to the journal, which stamps their `seq` and publishes them
+/// to every instance, in queue order.
 pub async fn run_publisher(mut rx: mpsc::Receiver<Publish>, pool: sqlx::PgPool, hub: Hub) {
-    while let Some(publish) = rx.recv().await {
-        let event_type = publish
-            .event
-            .get("type")
-            .and_then(Value::as_str)
-            .unwrap_or("unknown")
-            .to_owned();
-        match journal::append(&pool, &event_type, &publish.event).await {
-            Ok(seq) => {
-                let mut event = publish.event;
-                event["seq"] = json!(seq);
-                let text = event.to_string();
-                match publish.audience {
-                    Audience::All => hub.broadcast_all(&text),
-                    Audience::User(user) => hub.send_to_user(user, &text),
-                }
-            }
-            Err(err) => tracing::error!(error = %err, "journal append failed, event dropped"),
+    let mut broker = hub.redis();
+    let mut batch = Vec::with_capacity(MAX_BATCH);
+    while rx.recv_many(&mut batch, MAX_BATCH).await > 0 {
+        metrics::JOURNAL_BATCH.observe(batch.len() as f64);
+        if let Err(err) = journal::append_and_publish_batch(&pool, &mut broker, &batch).await {
+            tracing::error!(error = %err, events = batch.len(), "journal batch failed, events dropped");
         }
+        batch.clear();
     }
 }

@@ -48,14 +48,23 @@ schéma DB, conventions) et [`docs/protocole-websocket.md`](docs/protocole-webso
 Navigateur — React + TypeScript (Vite, servie par nginx)
    │  REST /api (snapshots)  ·  WebSocket /ws (différentiel, seq global)
    ▼
-api (Rust, axum, 1 instance) ── journal d'événements append-only
-   ▼
-PostgreSQL (sqlx) — utilisateurs, lutins, ventes, mises, événements
+nginx (répartiteur, round-robin, bascule passive)
+   ▼                      ▼
+api1 (Rust, axum)      api2 (Rust, axum)      ← mêmes sources, deux instances
+   │  journal + publication (transaction)  ·  pub/sub « lutincher:events »
+   ▼                      ▼
+PostgreSQL (sqlx)      Redis — pub/sub (fan-out), présence, limite de mises
 ```
 
-Le temps réel passe par un **hub WebSocket** unique : chaque événement est
-numéroté (`seq`) et journalisé en base avant diffusion — c'est ce qui permettra
-le rattrapage à la reconnexion (phase 3) et le fan-out multi-instances (phase 4).
+Chaque événement est **journalisé puis publié dans une même transaction**
+(verrou consultatif Postgres) : `seq` et ordre de diffusion sont identiques
+quelle que soit l'instance qui produit l'événement. Redis relaie ensuite chaque
+événement à toutes les instances ; chacune le remet à ses propres connexions.
+Si une instance perd Redis, elle coupe ses connexions : les clients se
+reconnectent et rattrapent les événements manqués par `sync`.
+
+Garantie annoncée : *au plus une fois* en direct, *au moins une fois* après
+reconnexion (journal + `seq`) — les doublons sont filtrés côté client.
 
 ## Lancement (une commande)
 
@@ -63,18 +72,19 @@ le rattrapage à la reconnexion (phase 3) et le fan-out multi-instances (phase 4
 docker compose up --build
 ```
 
-Puis ouvrir **http://localhost:3000** (front servi par nginx, qui proxifie
-`/api` et `/ws` vers l'api). Les trois services `db`, `api` et `front`
-démarrent, les migrations s'appliquent et le compte admin est créé
-automatiquement. Healthcheck : `curl http://localhost:3000/api/healthz`.
+Puis ouvrir **http://localhost:3000** (front servi par nginx, qui répartit
+`/api` et `/ws` entre `api1` et `api2`). Les services `db`, `redis`, `api1`,
+`api2` et `front` démarrent, les migrations s'appliquent et le compte admin est
+créé automatiquement. Healthcheck : `curl http://localhost:3000/api/healthz`
+(le champ `instance` indique quelle instance a répondu).
 
 ## Développement local
 
 ```bash
-# Base + api (Rust)
-docker compose up -d db
+# Base + broker, puis api (Rust)
+docker compose up -d db redis
 cd server && DATABASE_URL=postgres://lutincher:lutincher@localhost:5432/lutincher \
-  JWT_SECRET=dev-secret cargo run
+  REDIS_URL=redis://localhost:6379 JWT_SECRET=dev-secret cargo run
 
 # Front (Vite en mode dev, proxy /api et /ws vers :3000)
 cd web && pnpm install && pnpm run dev   # http://localhost:5173
@@ -96,6 +106,22 @@ Vérifications : `cd server && cargo clippy --all-targets -- -D warnings && carg
    10 dernières secondes prolonge le chrono.
 5. À la clôture de la vente, consulter **/classement** (live) puis **/collection**
    (lutin remporté, valeur totale).
+
+### Démo multi-instances (phase 4)
+
+```bash
+docker compose logs -f api1 api2     # chaque connexion WS indique son instance
+docker compose kill api1             # arrêt brutal d'une instance
+```
+
+Les clients connectés à `api1` se reconnectent seuls. Tant qu'`api1` est à
+terre, nginx ne route que vers `api2` ; les clients se resynchronisent ensuite
+depuis le journal, sans trou dans les mises.
+
+> **Attention** : nginx résout `api1` et `api2` au démarrage. Après une
+> recréation d'un conteneur api (`docker compose up -d --build` la fait quand
+> l'image change), relancer aussi le front : `docker compose restart front`.
+> Sinon nginx peut garder l'ancienne adresse.
 
 ## Tests
 

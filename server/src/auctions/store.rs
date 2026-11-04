@@ -1,6 +1,6 @@
 //! SQL access layer of the auction domain. Every write is order-guarded so a
 //! replayed bid cannot double-apply (see [`apply_bid`]); the only funds write
-//! of the whole system is [`debit_winner`]) at closing time (implicit escrow,
+//! of the whole system is the winner's debit in [`close_due`] (implicit escrow,
 //! docs/PLAN.md).
 
 use chrono::{DateTime, Utc};
@@ -182,7 +182,6 @@ pub async fn record_bid(
 pub struct ClosedAuction {
     pub id: Uuid,
     pub final_price: Option<i32>,
-    pub winner_id: Option<Uuid>,
     pub winner: Option<String>,
 }
 
@@ -210,26 +209,20 @@ pub async fn open_due(pool: &PgPool) -> Result<Vec<AuctionRow>, AppError> {
     Ok(sqlx::query_as::<_, AuctionRow>(&sql).bind(ids).fetch_all(pool).await?)
 }
 
-/// Closes every sale past its deadline and resolves its winner.
+/// Closes every sale past its deadline, resolves its winner and debits the
+/// winner — the ONLY funds write of the system (escrow is implicit during the
+/// sale). One statement: a crash cannot close a sale without charging its
+/// winner, nor charge a winner whose sale stayed open.
 pub async fn close_due(pool: &PgPool) -> Result<Vec<ClosedAuction>, AppError> {
     Ok(sqlx::query_as::<_, ClosedAuction>(
         "WITH due AS (UPDATE auctions \
             SET status = 'ended', winner_id = current_bidder, final_price = current_amount \
-          WHERE status = 'open' AND ends_at <= now() RETURNING id, winner_id, final_price) \
-         SELECT d.id, d.final_price, u.id AS winner_id, u.username AS winner \
+          WHERE status = 'open' AND ends_at <= now() RETURNING id, winner_id, final_price), \
+         debit AS (UPDATE users u SET points_total = u.points_total - d.final_price \
+          FROM due d WHERE u.id = d.winner_id AND d.final_price IS NOT NULL RETURNING u.id) \
+         SELECT d.id, d.final_price, u.username AS winner \
            FROM due d LEFT JOIN users u ON u.id = d.winner_id ORDER BY d.id",
     )
     .fetch_all(pool)
     .await?)
-}
-
-/// Debits the winner at closing time — the ONLY funds write of the system
-/// (escrow is implicit during the sale: nothing to release, nothing to hold).
-pub async fn debit_winner(pool: &PgPool, winner: Uuid, price: i64) -> Result<(), AppError> {
-    sqlx::query("UPDATE users SET points_total = points_total - $2 WHERE id = $1")
-        .bind(winner)
-        .bind(price as i32)
-        .execute(pool)
-        .await?;
-    Ok(())
 }

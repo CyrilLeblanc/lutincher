@@ -13,6 +13,10 @@ export const RECONNECT_BASE_DELAY_MS = 1000
 export const RECONNECT_MAX_DELAY_MS = 30000
 export const RECONNECT_JITTER_RATIO = 0.2
 
+// Heartbeat: a `ping` every 10 s keeps this tab listed as present (the server
+// expires a silent tab after 25 s, see server/src/ws/presence.rs).
+export const HEARTBEAT_INTERVAL_MS = 10000
+
 /** Pure: delay in ms before reconnection attempt `attempt` (0-based). */
 export function backoffDelayMs(attempt: number, random: () => number = Math.random): number {
   const exponential = Math.min(RECONNECT_BASE_DELAY_MS * 2 ** attempt, RECONNECT_MAX_DELAY_MS)
@@ -75,6 +79,7 @@ export class AuctionSocketClient {
 
   private socket: WebSocket | null = null
   private reconnectTimer: TimerHandle | null = null
+  private heartbeatTimer: ReturnType<typeof setInterval> | null = null
   private attempts = 0
   private running = false
   private lastSeq = 0
@@ -108,6 +113,7 @@ export class AuctionSocketClient {
   stop(): void {
     this.running = false
     this.clearReconnectTimer()
+    this.stopHeartbeat()
     if (this.socket !== null) {
       this.socket.onclose = null
       this.socket.close()
@@ -139,6 +145,7 @@ export class AuctionSocketClient {
   private handleOpen(): void {
     this.attempts = 0
     this.setStatus('open')
+    this.startHeartbeat()
     // Resync only after a drop: on a fresh session the REST snapshots are the
     // initial state and the socket streams differentials from now on.
     if (this.lastSeq > 0) {
@@ -169,6 +176,7 @@ export class AuctionSocketClient {
 
   private handleClose(): void {
     this.socket = null
+    this.stopHeartbeat()
     if (!this.running) return
     this.setStatus('reconnecting')
     const delayMs = backoffDelayMs(this.attempts, this.random)
@@ -188,5 +196,18 @@ export class AuctionSocketClient {
     if (this.reconnectTimer === null) return
     this.cancelSchedule(this.reconnectTimer)
     this.reconnectTimer = null
+  }
+
+  private startHeartbeat(): void {
+    this.stopHeartbeat()
+    this.heartbeatTimer = setInterval(() => {
+      this.send({ type: 'ping' })
+    }, HEARTBEAT_INTERVAL_MS)
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer === null) return
+    clearInterval(this.heartbeatTimer)
+    this.heartbeatTimer = null
   }
 }

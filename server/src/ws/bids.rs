@@ -9,8 +9,9 @@ use uuid::Uuid;
 use crate::auctions::logic::{self, BidOutcome, BidRejection};
 use crate::auctions::{standings, store};
 use crate::auth::token::Claims;
+use crate::metrics;
 use crate::state::AppState;
-use crate::ws::{self, error_code, Audience, Hub};
+use crate::ws::{self, error_code, limits, Audience, Hub};
 
 /// Body of a `bid` message, decoded strictly (unknown fields rejected).
 #[derive(Debug, serde::Deserialize)]
@@ -26,10 +27,18 @@ pub async fn handle(state: &AppState, hub: &Hub, claims: &Claims, value: &Value)
             "malformed bid message").await;
         return;
     };
-    if !hub.bid_allowed(claims.sub) {
-        ws::send_error(hub, claims.sub, error_code::RATE_LIMITED,
-            "more than 5 bids per 10 s").await;
-        return;
+    let mut broker = hub.redis();
+    match limits::bid_allowed(&mut broker, claims.sub).await {
+        Ok(true) => {}
+        Ok(false) => {
+            ws::send_error(hub, claims.sub, error_code::RATE_LIMITED,
+                "more than 5 bids per 10 s").await;
+            return;
+        }
+        Err(err) => {
+            tracing::error!(error = %err, "bid rate limit check failed");
+            return;
+        }
     }
     let pool = state.pool();
     // Game closed: no new bid; sales in flight end on their own (cahier §3.4).
@@ -105,6 +114,7 @@ async fn apply(state: &AppState, hub: &Hub, claims: &Claims, msg: &BidMsg, outco
             ws::send_error(hub, claims.sub, code, &detail).await;
         }
         Ok(Some(applied)) => {
+            metrics::BIDS_ACCEPTED.inc();
             if let Err(err) = store::record_bid(pool, msg.auction_id, claims.sub, msg.amount).await
             {
                 tracing::error!(error = %err, "bid history insert failed");
