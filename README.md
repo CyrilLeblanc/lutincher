@@ -75,7 +75,9 @@ docker compose up --build
 Puis ouvrir **http://localhost:3000** (front servi par nginx, qui répartit
 `/api` et `/ws` entre `api1` et `api2`). Les services `db`, `redis`, `api1`,
 `api2` et `front` démarrent, les migrations s'appliquent et le compte admin est
-créé automatiquement. Healthcheck : `curl http://localhost:3000/api/healthz`
+créé automatiquement. Sur une base vide, un seed de démo crée aussi 40 lutins et
+10 ventes, une par minute à partir du démarrage (`SEED_DEMO=false` pour
+l'empêcher ; `loadtest/scripts/serie.sh` le fait). Healthcheck : `curl http://localhost:3000/api/healthz`
 (le champ `instance` indique quelle instance a répondu).
 
 ## Développement local
@@ -117,6 +119,13 @@ docker compose kill api1             # arrêt brutal d'une instance
 Les clients connectés à `api1` se reconnectent seuls. Tant qu'`api1` est à
 terre, nginx ne route que vers `api2` ; les clients se resynchronisent ensuite
 depuis le journal, sans trou dans les mises.
+
+Test scripté (Node 22 ou plus, stack lancée, une vente ouverte) :
+`node loadtest/scripts/failover.mjs`, avec `COMPOSE=docker-compose` si la
+commande `docker compose` n'existe pas. Résultat du 2026-11-04 : 7 contrôles
+sur 7. nginx abandonne une instance morte après 1 s (`proxy_connect_timeout`)
+et partage son état d'échec entre workers (`zone`) : sans ces deux réglages, la
+reconnexion prenait plus de 30 s.
 
 > **Attention** : nginx résout `api1` et `api2` au démarrage. Après une
 > recréation d'un conteneur api (`docker compose up -d --build` la fait quand

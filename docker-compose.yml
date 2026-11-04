@@ -14,6 +14,8 @@ x-api: &api
     ADMIN_USERNAME: admin
     ADMIN_PASSWORD: lutincher
     LUTINS_ASSETS_DIR: /usr/local/share/lutincher/assets
+    # Demo seed (40 lutins, 10 sales) on an empty base; serie.sh turns it off.
+    SEED_DEMO: ${SEED_DEMO:-true}
 
 services:
   db:

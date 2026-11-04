@@ -11,6 +11,8 @@ cd "$(dirname "$0")/../.." || exit 1
 R=loadtest/results
 PROM="http://localhost:9090/api/v1/query"
 n="${1:?usage: serie.sh <name>}"
+# No demo sale during a measurement: k6 creates its own 12 sales.
+export SEED_DEMO=false
 
 date -Is > "$R/$n-start.txt"
 echo "[$n] reset $(date -Is)"

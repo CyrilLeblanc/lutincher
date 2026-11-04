@@ -24,7 +24,7 @@ const PLAYER_NAV_ITEMS: ReadonlyArray<NavItem> = [
 const ADMIN_NAV_ITEM: NavItem = { to: ROUTE_PATHS.admin, label: NAV_LABELS.admin }
 
 export function Layout() {
-  const { user, logout } = useAuth()
+  const { user, sessionExpired, logout } = useAuth()
   const { status } = useSocket()
   const gameClosed = useGameClosed()
 
@@ -76,6 +76,11 @@ export function Layout() {
         </div>
       </header>
       <main className="app-main">
+        {sessionExpired && (
+          <p className="banner banner--warning" role="status">
+            {LAYOUT_TEXT.sessionExpired}
+          </p>
+        )}
         {gameClosed && (
           <p className="banner banner--warning" role="status">
             {GAME_TEXT.closed}

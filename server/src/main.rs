@@ -45,6 +45,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     .await?;
     sqlx::migrate!("./migrations").run(state.pool()).await?;
     auth::seed::seed_admin(state.pool()).await?;
+    lutins::seed::seed_demo(state.pool()).await?;
 
     // Real-time core, shared by every instance through Redis: the publisher
     // (journal `seq` → broadcast), the subscriber (broadcast → local tabs),

@@ -10,7 +10,7 @@ use uuid::Uuid;
 use crate::auth::token::Claims;
 use crate::metrics;
 use crate::state::AppState;
-use crate::ws::{self, error_code, journal, presence, Hub};
+use crate::ws::{self, error_code, journal, limits, presence, Hub};
 
 /// Outbound channel per connection; a full channel drops frames
 /// (at-most-once live, the resync covers the loss).
@@ -133,6 +133,19 @@ async fn handle_sync(
         ws::send_error(hub, claims.sub, error_code::MALFORMED_MESSAGE,
             "last_seq must be >= 0").await;
         return;
+    }
+    let mut broker = hub.redis();
+    match limits::sync_allowed(&mut broker, claims.sub).await {
+        Ok(true) => {}
+        Ok(false) => {
+            ws::send_error(hub, claims.sub, error_code::RATE_LIMITED,
+                "more than 10 syncs per 10 s").await;
+            return;
+        }
+        Err(err) => {
+            tracing::error!(error = %err, "sync rate limit check failed");
+            return;
+        }
     }
     let pool = state.pool();
     let mut events = Vec::new();

@@ -13,6 +13,8 @@ export interface AuthState {
   user: UserMe | null
   /** Current JWT; null while logged out. */
   token: string | null
+  /** True after the token expired and the session ended (T2). */
+  sessionExpired: boolean
   /** POST /api/auth/register — stores the returned token (auto-login). */
   register: (username: string, password: string) => Promise<void>
   /** POST /api/auth/login — stores the returned token. */

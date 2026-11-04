@@ -11,8 +11,14 @@ section 6).
   Prometheus, Grafana, k6) ; optimisation « journal par lots » (commit `802c253`) ;
   quatre séries mesurées (avant 1 et 2, après 1 et 2) ; protocole, analyses,
   scripts et journal de l'usage de l'IA.
-- **Pas fait** : test de bascule sous Docker ; PR vers `main` ; validation de la
-  lecture des gains par le groupe.
+- **Fait ensuite (après-midi du 2026-11-04, sur `main`, non committé)** : PR
+  `phase-5-mesure` fusionnée (#2) ; test de bascule sous Docker 7/7, après deux
+  corrections nginx (`proxy_connect_timeout 1s`, `zone`) et la correction de
+  l'URL dans `failover.mjs` ; limite sur `sync` (10 par 10 s) ; seed de démo
+  (40 lutins, 10 ventes, `SEED_DEMO`) ; jeton expiré côté client (T2) ; bandeau
+  « vente sur le point de se clôturer » (J7) ; dossier à jour dans
+  `docs/dossier.md`.
+- **Pas fait** : validation de la lecture des gains par le groupe.
 
 ## 2. Ordre de lecture
 
@@ -23,6 +29,7 @@ section 6).
 5. `USAGE-IA.md` : journal de l'usage de l'IA et bilan.
 6. `loadtest/results/*-analyse.md` : une sortie par série.
 7. `README.md` : architecture multi-instances.
+8. `docs/dossier.md` : dossier technique à jour (phase 6).
 
 ## 3. Résultats
 
@@ -75,12 +82,16 @@ la fenêtre, donc avant la prochaine remise à zéro :
 node loadtest/scripts/analyse.mjs loadtest/results/apres-1.json loadtest/results/apres-1-start.txt loadtest/results/apres-1-end.txt
 ```
 
-Test de bascule, à faire : Node 22 requis, stack lancée et une vente ouverte. Le
+Test de bascule (fait, 7/7) : Node 22 ou plus, stack lancée et une vente ouverte. Le
 script coupe api1 pendant environ une minute et crée 4 comptes de test.
 
 ```bash
 node loadtest/scripts/failover.mjs
+COMPOSE=docker-compose node loadtest/scripts/failover.mjs   # sans « docker compose »
 ```
+
+Le seed de démo assure une vente ouverte pendant les 10 premières minutes
+après le démarrage sur une base vide.
 
 Compilation et tests (règles de `CLAUDE.md`) :
 
@@ -134,34 +145,29 @@ principal. Les exports de lots ne servent pas pour une série avant : la métriq
 - **Périmètre.** `docs/PLAN.md` ne cite pas `loadtest/`, alors que `CLAUDE.md`
   limite chaque tâche aux répertoires de ce plan. À arbitrer avec l'intégrateur.
 
+- **Poste sans MSVC.** `cargo build` sous Windows échoue sans `link.exe`. Passer
+  par un `docker build` (image `rust:1-slim`) qui lance clippy et les tests.
+  Avec un moteur Docker dans WSL joint en TCP, un montage de dossier Windows
+  arrive vide, et `docker exec` ne renvoie aucune sortie.
+- **pnpm absent.** `npx -y pnpm@10 run build` marche sans corepack.
+
 ## 7. Reste à faire
 
-1. Test de bascule sous Docker (`node loadtest/scripts/failover.mjs`, Node 22) :
-   7 contrôles attendus. Noter le résultat dans `USAGE-IA.md`.
-2. Décider si deux séries de plus sont nécessaires pour conclure aux paliers 10
-   et 50 (le protocole en prévoit deux par configuration).
-3. Faire valider par le groupe la lecture des gains (`docs/protocole-mesure.md`,
-   §7).
-4. Décider si la PR vers `main` s'ouvre. Aucune n'est ouverte :
-   https://github.com/CyrilLeblanc/lutincher/pull/new/phase-5-mesure
-5. Compléter le nom du groupe dans `USAGE-IA.md` (« G_ »).
-6. Points de la fiche de phase 3 à vérifier, non trouvés dans le code :
-   - notification « vente sur le point de se clôturer » (cahier, J7) : aucune
-     trouvée ;
-   - script de seed (une quarantaine de lutins, ventes prêtes) : seul `seed_admin`
-     est appelé au démarrage (`server/src/main.rs`) ;
-   - limite de débit sur `sync` : rien dans `server/src/ws/handler.rs` ;
-   - jeton expiré côté client (T2) : rien trouvé dans `web/src`.
-7. Phase 6 (cahier, ligne 268) : dossier de 8 à 12 pages, vidéo de 3 minutes, ligne
-   du tableau comparatif, `USAGE-IA.md`.
+1. Faire valider par le groupe la lecture des gains (`docs/protocole-mesure.md`,
+   §7, et `docs/dossier.md`, section 8).
+2. Committer le lot de l'après-midi (code, nginx, scripts, documents).
+3. Préparer la soutenance (J4) : 7 min, chaque membre parle, vidéo de secours prête.
+
+Fait ou écarté : bandeaux T2 et J7 vus dans le navigateur ; pas de nouvelle série
+de charge (les quatre séries suffisent) ; pas de relecture croisée.
 
 ## 8. Démarrage avec un autre Claude
 
 Coller ce texte au début d'une nouvelle conversation, dans le dépôt :
 
 ```text
-Tu reprends le projet Lutincher, branche phase-5-mesure, dépôt local.
-Lis dans cet ordre : CLAUDE.md, docs/passation.md, docs/protocole-mesure.md, USAGE-IA.md.
+Tu reprends le projet Lutincher, branche main, dépôt local.
+Lis dans cet ordre : CLAUDE.md, docs/passation.md, docs/dossier.md, docs/protocole-mesure.md, USAGE-IA.md.
 Ne lance rien sur Docker et ne committe rien sans ma demande explicite : une série prend environ 17 minutes et efface la base.
 Commence par résumer l'état et les points de « Reste à faire », puis propose un plan avant d'agir.
 ```

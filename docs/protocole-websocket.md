@@ -139,8 +139,8 @@ erDiagram
 
 | Message client | Réponse serveur |
 |---|---|
-| `bid` | `bid` (broadcast) + `outbid` (à l'ancien leader), ou `error` |
-| `sync` | `sync`, ou `error` |
+| `bid` | `bid` (broadcast) + `outbid` (à l'ancien leader), ou `error` (`rate_limited` au-delà de 5 mises par 10 s et par utilisateur) |
+| `sync` | `sync`, ou `error` (`rate_limited` au-delà de 10 `sync` par 10 s et par utilisateur) |
 | `ping` | Aucune (pas de `pong` typé) |
 
 ## 6. Problèmes identifiés

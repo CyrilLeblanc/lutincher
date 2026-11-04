@@ -4,12 +4,14 @@
 // and keep receiving events. Run with Node 22 (global fetch and WebSocket) and
 // the stack up on localhost:3000. It stops api1 for about a minute.
 // Usage, from the repo root: node loadtest/scripts/failover.mjs
+// COMPOSE overrides the compose command (e.g. COMPOSE=docker-compose).
 import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const REPO = fileURLToPath(new URL('../..', import.meta.url))
 const BASE = 'http://localhost:3000/api'
-const WS_URL = 'ws://localhost:3000/api/ws'
+const WS_URL = 'ws://localhost:3000/ws'
+const COMPOSE = process.env.COMPOSE ?? 'docker compose'
 const CLIENTS = 4
 const PASSWORD = 'motdepasse-test-123'
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -124,7 +126,7 @@ if (auction) {
 
   const closesBefore = clients.map((c) => c.closes)
   const seqBefore = clients.map((c) => c.lastSeq)
-  execSync('docker compose kill api1', { cwd: REPO, stdio: 'inherit' })
+  execSync(`${COMPOSE} kill api1`, { cwd: REPO, stdio: 'inherit' })
   const dropped = await waitFor(() => clients.some((c, i) => c.closes > closesBefore[i]), 15000)
   const onApi1 = clients.filter((c, i) => c.closes > closesBefore[i]).length
   check('coupure de api1 : les clients de api1 tombent', dropped, `${onApi1} client(s) sur api1`)
@@ -158,6 +160,6 @@ for (const c of clients) {
   c.stopped = true
   c.ws.close()
 }
-execSync('docker compose up -d api1', { cwd: REPO, stdio: 'inherit' })
+execSync(`${COMPOSE} up -d api1`, { cwd: REPO, stdio: 'inherit' })
 console.log(`${outcomes.filter(Boolean).length}/${outcomes.length} contrôles passent`)
 process.exit(outcomes.every(Boolean) ? 0 : 1)

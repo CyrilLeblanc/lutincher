@@ -36,6 +36,7 @@ export const LAYOUT_TEXT = {
   balance: 'Solde',
   pointsUnit: 'pts',
   logout: 'Déconnexion',
+  sessionExpired: 'Votre session a expiré : reconnectez-vous pour continuer.',
 } as const
 
 export const LUTIN_CARD_TEXT = {
@@ -278,6 +279,7 @@ export const AUCTION_ROOM_TEXT = {
   backToList: 'Toutes les ventes',
   chronoLabel: 'Temps restant',
   closing: 'Clôture en cours…',
+  closingSoon: 'Vente sur le point de se clôturer : dernières secondes pour miser !',
   antiSniping: 'Anti-sniping : une mise dans les 10 dernières secondes prolonge la vente de 10 s.',
   factStartPrice: 'Prix de départ',
   factIncrement: 'Palier minimal',

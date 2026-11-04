@@ -20,6 +20,7 @@ import { Countdown } from './Countdown'
 import { OutcomePanel } from './OutcomePanel'
 import { PresenceList } from './PresenceList'
 import { initRoom, roomFromSnapshot, roomReducer, suggestedBid, type RoomState } from './reducer'
+import { isAntiSniping, remainingSeconds } from './time'
 import { useNow } from './useNow'
 
 /** Room-specific failure wording: a 404 on the detail route names the sale. */
@@ -151,6 +152,9 @@ export function AuctionRoom({ roomId }: AuctionRoomProps) {
   }
 
   const socketDown = status !== 'open'
+  // J7: an open sale inside its last seconds (deadline from the server clock).
+  const closingSoon =
+    state.outcome === null && view.status === 'open' && isAntiSniping(remainingSeconds(state.endsAt, now))
   const bidDisabledReason =
     me === null ? AUCTION_ROOM_TEXT.loginToBid : socketDown ? AUCTION_ROOM_TEXT.socketClosed : null
 
@@ -170,6 +174,12 @@ export function AuctionRoom({ roomId }: AuctionRoomProps) {
       {state.outbid !== null && (
         <p className="banner banner--alert" role="alert">
           {AUCTION_ROOM_TEXT.outbidNotice(state.outbid.by, state.outbid.amount)}
+        </p>
+      )}
+
+      {closingSoon && (
+        <p className="banner banner--warning" role="status">
+          {AUCTION_ROOM_TEXT.closingSoon}
         </p>
       )}
 

@@ -4,6 +4,7 @@
 
 pub mod engine;
 pub mod manifest;
+pub mod seed;
 
 // Re-exported for the auctions/leaderboard wave (G); remove once consumed.
 #[expect(unused_imports)]

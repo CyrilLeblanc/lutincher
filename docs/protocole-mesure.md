@@ -109,6 +109,19 @@ Dans `last-run.json`, le seuil `p(95)<1000` de chaque palier est une
 
 ## 7. Résultats
 
+**Modifications faites après les quatre séries (2026-11-04 après-midi).** Aucune
+série n'a été mesurée avec elles. Une nouvelle série devra refaire aussi les
+séries « avant » (§6 du fichier de passation : mêmes conditions).
+
+- nginx : `proxy_connect_timeout 1s` et `zone` partagée sur l'upstream. Elles ne
+  jouent qu'en cas de panne d'une instance, mais la configuration n'est plus
+  identique.
+- Seed de démo au démarrage (40 lutins, 10 ventes). `serie.sh` le désactive
+  (`SEED_DEMO=false`) : sans cela, des ventes de démo s'ouvriraient pendant la
+  série.
+- Limite de débit sur `sync` (10 par 10 s). Le scénario k6 n'envoie pas de
+  `sync` : sans effet sur la charge mesurée.
+
 *(à remplir après les mesures : une ligne par palier et par série)*
 
 **Incidents de mesure (non retenus)**
