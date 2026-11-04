@@ -3,9 +3,9 @@
 //! Redis (fan-out in `broker`, presence in `presence`, bid limits in `limits`).
 //!
 //! Delivery guarantees (cahier §6 "reconnexion"):
-//! - ORDER: total — an event is journalled and published in one transaction
-//!   under an advisory lock (see `journal`), so every instance receives events
-//!   in strict `seq` order, whichever instance produced them;
+//! - ORDER: total — a batch of events is journalled and published in one
+//!   transaction under an advisory lock (see `journal`), so every instance
+//!   receives events in strict `seq` order, whichever instance produced them;
 //! - live: AT MOST ONCE — fan-out uses `try_send`; a full or dead channel drops
 //!   the frame. A lost broker subscription drops the instance's connections, so
 //!   their clients resync instead of silently missing frames (see `broker`);
@@ -91,6 +91,11 @@ fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
 /// Publish-pipeline capacity; producers await when full (backpressure), the
 /// publisher drains in journal order.
 const PUBLISH_CAPACITY: usize = 256;
+
+/// Most events journalled in one transaction. The publisher never waits to
+/// fill a batch: it takes what is already queued, so a light load keeps
+/// batches of one and adds no latency.
+const MAX_BATCH: usize = 64;
 
 /// Creates the publish channel feeding [`run_publisher`]; pass the sender to
 /// [`Hub::new`], the receiver to the publisher task.
@@ -209,27 +214,17 @@ pub fn parse_message<T: serde::de::DeserializeOwned>(value: &Value) -> Option<T>
     serde_json::from_value(object).ok()
 }
 
-/// Single writer per instance: hands each queued event to the journal, which
-/// stamps its `seq` and publishes it to every instance, in queue order.
+/// Single writer per instance: takes the queued events (up to [`MAX_BATCH`])
+/// and hands them to the journal, which stamps their `seq` and publishes them
+/// to every instance, in queue order.
 pub async fn run_publisher(mut rx: mpsc::Receiver<Publish>, pool: sqlx::PgPool, hub: Hub) {
     let mut broker = hub.redis();
-    while let Some(publish) = rx.recv().await {
-        let event_type = publish
-            .event
-            .get("type")
-            .and_then(Value::as_str)
-            .unwrap_or("unknown")
-            .to_owned();
-        if let Err(err) = journal::append_and_publish(
-            &pool,
-            &mut broker,
-            &publish.audience,
-            &event_type,
-            &publish.event,
-        )
-        .await
-        {
-            tracing::error!(error = %err, "journal append or publish failed, event dropped");
+    let mut batch = Vec::with_capacity(MAX_BATCH);
+    while rx.recv_many(&mut batch, MAX_BATCH).await > 0 {
+        metrics::JOURNAL_BATCH.observe(batch.len() as f64);
+        if let Err(err) = journal::append_and_publish_batch(&pool, &mut broker, &batch).await {
+            tracing::error!(error = %err, events = batch.len(), "journal batch failed, events dropped");
         }
+        batch.clear();
     }
 }
