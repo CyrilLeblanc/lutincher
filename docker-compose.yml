@@ -1,3 +1,20 @@
+x-api: &api
+  build: ./server
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  environment: &api-env
+    DATABASE_URL: postgres://lutincher:lutincher@db:5432/lutincher
+    REDIS_URL: redis://redis:6379
+    JWT_SECRET: dev-secret-change-me
+    # Dev origin (vite :5173) + composed front (nginx :3000).
+    ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
+    ADMIN_USERNAME: admin
+    ADMIN_PASSWORD: lutincher
+    LUTINS_ASSETS_DIR: /usr/local/share/lutincher/assets
+
 services:
   db:
     image: postgres:17-alpine
@@ -13,26 +30,73 @@ services:
       timeout: 3s
       retries: 10
 
-  api:
-    build: ./server
-    depends_on:
-      db:
-        condition: service_healthy
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Two api instances: same code and config, different names (logs, /healthz).
+  api1:
+    <<: *api
     environment:
-      DATABASE_URL: postgres://lutincher:lutincher@db:5432/lutincher
-      JWT_SECRET: dev-secret-change-me
-      # Dev origin (vite :5173) + composed front (nginx :3000).
-      ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
-      ADMIN_USERNAME: admin
-      ADMIN_PASSWORD: lutincher
-      LUTINS_ASSETS_DIR: /usr/local/share/lutincher/assets
+      <<: *api-env
+      INSTANCE_NAME: api1
+
+  api2:
+    <<: *api
+    environment:
+      <<: *api-env
+      INSTANCE_NAME: api2
 
   front:
     build: ./web
     depends_on:
-      - api
+      - api1
+      - api2
     ports:
       - "3000:80"
+
+  # Observability (phase 5): Prometheus scrapes both instances, Grafana shows
+  # the dashboard (http://localhost:3001, anonymous viewer, admin/lutincher).
+  prometheus:
+    image: prom/prometheus:v3.5.5
+    depends_on:
+      - api1
+      - api2
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:12.4.14
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: lutincher
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3001:3000"
+
+  # Load scenario (phase 5), run on demand:
+  #   docker compose --profile loadtest run --rm k6
+  k6:
+    image: grafana/k6:1.8.2
+    profiles: ["loadtest"]
+    depends_on:
+      - front
+    environment:
+      BASE_URL: http://front
+    volumes:
+      - ./loadtest:/scripts
+    command: run --summary-export /scripts/results/last-run.json /scripts/bidders.js
 
 volumes:
   db-data:

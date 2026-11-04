@@ -1,0 +1,9 @@
+# Prometheus scrape config: both api instances expose /metrics on their own
+# port (not through nginx). Two seconds is fine for a 3-minute load level.
+global:
+  scrape_interval: 2s
+
+scrape_configs:
+  - job_name: lutincher-api
+    static_configs:
+      - targets: ['api1:3000', 'api2:3000']
