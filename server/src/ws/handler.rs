@@ -5,10 +5,12 @@
 use axum::extract::ws::{Message, WebSocket};
 use serde_json::{json, Value};
 use tokio::sync::mpsc;
+use uuid::Uuid;
 
 use crate::auth::token::Claims;
+use crate::metrics;
 use crate::state::AppState;
-use crate::ws::{self, error_code, journal, Hub};
+use crate::ws::{self, error_code, journal, presence, Hub};
 
 /// Outbound channel per connection; a full channel drops frames
 /// (at-most-once live, the resync covers the loss).
@@ -18,12 +20,17 @@ const MAX_MESSAGE_BYTES: usize = 512;
 /// Sync replay batch size (keeps each replay query bounded).
 const SYNC_BATCH: i64 = 500;
 
-/// Serves one connection until it closes; presence is broadcast on both ends.
+/// Serves one connection until it closes; presence is announced on both ends.
 pub async fn serve(mut socket: WebSocket, state: AppState, claims: Claims) {
     let (tx, mut rx) = mpsc::channel::<String>(OUTBOUND_CAPACITY);
     let hub = state.hub().clone();
-    let conn = hub.register(claims.sub, &claims.username, tx.clone());
-    ws::publish_presence(&hub).await;
+    // The registry holds the only sender: dropping the registration (broker
+    // reset) closes `rx` and ends this loop.
+    let conn = hub.register(claims.sub, tx);
+    // Presence is keyed by connection, not by user: two tabs stay two entries.
+    let presence_id = Uuid::new_v4();
+    presence::join(&hub, presence_id, &claims.username).await;
+    tracing::info!(instance = hub.instance(), user = %claims.username, "websocket opened");
 
     loop {
         tokio::select! {
@@ -41,7 +48,7 @@ pub async fn serve(mut socket: WebSocket, state: AppState, claims: Claims) {
             inbound = socket.recv() => {
                 match inbound {
                     Some(Ok(Message::Text(text))) => {
-                        if !handle_text(&state, &hub, &tx, &claims, &text).await {
+                        if !handle_text(&state, &hub, conn, &claims, presence_id, &text).await {
                             break;
                         }
                     }
@@ -63,15 +70,18 @@ pub async fn serve(mut socket: WebSocket, state: AppState, claims: Claims) {
         }
     }
     hub.unregister(conn);
-    ws::publish_presence(&hub).await;
+    presence::leave(&hub, presence_id).await;
+    metrics::DISCONNECTS.inc();
+    tracing::info!(instance = hub.instance(), user = %claims.username, "websocket closed");
 }
 
 /// Decodes one inbound text frame; false closes the connection.
 async fn handle_text(
     state: &AppState,
     hub: &Hub,
-    tx: &mpsc::Sender<String>,
+    conn: u64,
     claims: &Claims,
+    presence_id: Uuid,
     text: &str,
 ) -> bool {
     if text.len() > MAX_MESSAGE_BYTES {
@@ -86,9 +96,9 @@ async fn handle_text(
     };
     let kind = value.get("type").and_then(Value::as_str);
     match kind {
-        // Client keepalive: ignored at the protocol level.
-        Some("ping") => {}
-        Some("sync") => handle_sync(state, hub, tx, claims, &value).await,
+        // Client heartbeat (every 10 s): renews this tab's presence entry.
+        Some("ping") => presence::heartbeat(hub, presence_id, &claims.username).await,
+        Some("sync") => handle_sync(state, hub, conn, claims, &value).await,
         Some("bid") => super::bids::handle(state, hub, claims, &value).await,
         _ => {
             ws::send_error(hub, claims.sub, error_code::MALFORMED_MESSAGE,
@@ -110,7 +120,7 @@ struct SyncMsg {
 async fn handle_sync(
     state: &AppState,
     hub: &Hub,
-    tx: &mpsc::Sender<String>,
+    conn: u64,
     claims: &Claims,
     value: &Value,
 ) {
@@ -147,7 +157,5 @@ async fn handle_sync(
         }
     }
     let envelope = json!({ "type": "sync", "events": events, "seq": cursor }).to_string();
-    if let Err(err) = tx.try_send(envelope) {
-        tracing::debug!(error = %err, "sync envelope dropped (connection gone)");
-    }
+    hub.send_to_conn(conn, &envelope);
 }

@@ -3,6 +3,7 @@ mod auth;
 mod config;
 mod error;
 mod lutins;
+mod metrics;
 mod routes;
 mod state;
 mod ws;
@@ -29,25 +30,32 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
         .init();
 
+    metrics::register_all();
     let config = Config::from_env()?;
     let (publish_tx, publish_rx) = ws::publish_channel();
+    let broker = redis::Client::open(config.redis_url())?;
+    let redis = redis::aio::ConnectionManager::new(broker.clone()).await?;
+    let hub = ws::Hub::new(publish_tx, redis, config.instance().to_owned());
     let state = AppState::connect(
         config.database_url(),
         config.jwt_secret().to_owned(),
-        ws::Hub::new(publish_tx),
+        hub,
         config.allowed_origins().to_vec(),
     )
     .await?;
     sqlx::migrate!("./migrations").run(state.pool()).await?;
     auth::seed::seed_admin(state.pool()).await?;
 
-    // Real-time core: the single publisher (journal `seq` → broadcast, in
-    // order) and the auction lifecycle scanner (~1 s pass).
+    // Real-time core, shared by every instance through Redis: the publisher
+    // (journal `seq` → broadcast), the subscriber (broadcast → local tabs),
+    // the presence sweep and the auction lifecycle scanner (~1 s pass).
     tokio::spawn(ws::run_publisher(
         publish_rx,
         state.pool().clone(),
         state.hub().clone(),
     ));
+    tokio::spawn(ws::broker::run_subscriber(broker, state.hub().clone()));
+    tokio::spawn(ws::presence::run_sweep(state.hub().clone()));
     tokio::spawn(auctions::scheduler::run(
         state.pool().clone(),
         state.hub().clone(),
@@ -70,7 +78,7 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind(config.bind_addr()).await?;
-    tracing::info!("listening on http://{}", config.bind_addr());
+    tracing::info!(instance = config.instance(), "listening on http://{}", config.bind_addr());
     axum::serve(listener, app)
         .with_graceful_shutdown(shutdown_signal())
         .await?;

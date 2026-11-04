@@ -2,6 +2,8 @@
 //! auctions and closes expired ones (cahier §3.3), plus the admin-triggered
 //! game close (§3.4). Deadlines live in the database — nothing time-critical
 //! is held in memory, so the scan period is coarse on purpose.
+//! Every instance runs the scan: each sale is opened or closed by exactly one
+//! of them, because the SQL guards on the status it changes.
 
 use chrono::Utc;
 use serde_json::{json, Value};
@@ -36,9 +38,6 @@ async fn tick(pool: &PgPool, hub: &Hub) -> Result<(), AppError> {
         hub.publish_all(auction.started_event(now)).await;
     }
     for closed in store::close_due(pool).await? {
-        if let (Some(winner), Some(price)) = (closed.winner_id, closed.final_price) {
-            store::debit_winner(pool, winner, price as i64).await?;
-        }
         hub.publish_all(json!({
             "type": "auction_ended",
             "auction_id": closed.id,
